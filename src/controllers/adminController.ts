@@ -52,7 +52,7 @@ export class AdminController {
         }
       });
 
-      const mappedAgents = agents.map(a => this.mapAgentResponse(a));
+      const mappedAgents = agents.map(a => AdminController.mapAgentResponse(a));
       sendResponse(res, 200, mappedAgents);
     } catch (error: any) {
       sendError(res, 500, error.message);
@@ -80,7 +80,7 @@ export class AdminController {
 
       if (!agent) return sendError(res, 404, "Agent not found");
 
-      const baseMapped = this.mapAgentResponse(agent);
+      const baseMapped = AdminController.mapAgentResponse(agent);
       
       const mappedAgent = {
         ...baseMapped,
@@ -145,7 +145,7 @@ export class AdminController {
         });
       });
 
-      const mappedAgent = this.mapAgentResponse(agent);
+      const mappedAgent = AdminController.mapAgentResponse(agent);
       sendResponse(res, 201, mappedAgent, "Agent created successfully");
     } catch (error: any) {
       sendError(res, 400, error.message);
@@ -174,7 +174,7 @@ export class AdminController {
         include: { user: true }
       });
 
-      const mappedAgent = this.mapAgentResponse(agent);
+      const mappedAgent = AdminController.mapAgentResponse(agent);
       sendResponse(res, 200, mappedAgent, "Agent updated successfully");
     } catch (error: any) {
       sendError(res, 400, error.message);
@@ -197,7 +197,7 @@ export class AdminController {
         include: { user: true }
       });
 
-      const mappedAgent = this.mapAgentResponse(agent);
+      const mappedAgent = AdminController.mapAgentResponse(agent);
       sendResponse(res, 200, mappedAgent, "Agent deactivated successfully");
 
     } catch (error: any) {
@@ -221,7 +221,7 @@ export class AdminController {
         include: { user: true }
       });
 
-      const mappedAgent = this.mapAgentResponse(agent);
+      const mappedAgent = AdminController.mapAgentResponse(agent);
       sendResponse(res, 200, mappedAgent, "Agent activated successfully");
 
     } catch (error: any) {
@@ -247,7 +247,7 @@ export class AdminController {
         include: { user: true }
       });
 
-      const mappedAgent = this.mapAgentResponse(agent);
+      const mappedAgent = AdminController.mapAgentResponse(agent);
       sendResponse(res, 200, mappedAgent, "Agent password reset successfully");
 
     } catch (error: any) {
