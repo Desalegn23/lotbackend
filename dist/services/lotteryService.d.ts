@@ -23,6 +23,20 @@ export declare class LotteryService {
         agentId: string;
     }>;
     static getActiveLotteries(): Promise<({
+        agent: {
+            user: {
+                name: string;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            userId: string;
+            bankName: string | null;
+            accountNumber: string | null;
+        };
+        _count: {
+            tickets: number;
+        };
         prizeDistribution: {
             id: string;
             position: number;
@@ -43,6 +57,17 @@ export declare class LotteryService {
         agentId: string;
     })[]>;
     static getLotteryById(id: string): Promise<({
+        agent: {
+            user: {
+                name: string;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            userId: string;
+            bankName: string | null;
+            accountNumber: string | null;
+        };
         _count: {
             tickets: number;
         };
@@ -71,6 +96,7 @@ export declare class LotteryService {
         createdAt: Date;
         lotteryId: string;
         ticketNumber: number;
+        reservedBy: string | null;
     }[]>;
 }
 export declare class AgentService {
@@ -104,13 +130,22 @@ export declare class AgentService {
         pendingReservations: number;
         totalRevenue: number;
     }>;
-    static getAgentWinners(userId: string): Promise<{
+    static getAgentWinners(userId: string): Promise<({
+        lottery: {
+            title: string;
+        };
+        ticket: {
+            status: import("@prisma/client").$Enums.TicketStatus;
+            ticketNumber: number;
+            reservedBy: string | null;
+        };
+    } & {
         id: string;
         drawnAt: Date;
         prizeAmount: number;
         lotteryId: string;
         ticketId: string;
         prizePosition: number;
-    }[]>;
+    })[]>;
 }
 //# sourceMappingURL=lotteryService.d.ts.map

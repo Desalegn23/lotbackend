@@ -12,6 +12,7 @@ export declare class DrawService {
             createdAt: Date;
             lotteryId: string;
             ticketNumber: number;
+            reservedBy: string | null;
         };
     } & {
         id: string;

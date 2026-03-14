@@ -190,9 +190,10 @@ export class AgentService {
           select: { title: true }
         },
         ticket: {
-          include: {
-            // @ts-ignore
-            user: { select: { name: true } }
+          select: {
+            ticketNumber: true,
+            status: true,
+            reservedBy: true,
           }
         }
       },

@@ -27,6 +27,7 @@ export declare class ReservationService {
                 createdAt: Date;
                 lotteryId: string;
                 ticketNumber: number;
+                reservedBy: string | null;
             };
         } & {
             id: string;

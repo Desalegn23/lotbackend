@@ -2,11 +2,18 @@ import prisma from '../db/prisma.js';
 import { LotteryStatus, TicketStatus } from '@prisma/client';
 export class LotteryService {
     static async createLottery(data) {
+        // 1. Resolve agent.id from userId
+        const agent = await prisma.agent.findUnique({
+            where: { userId: data.agentId },
+        });
+        if (!agent) {
+            throw new Error('Agent profile not found');
+        }
         return await prisma.$transaction(async (tx) => {
-            // 1. Create the lottery record
+            // 2. Create the lottery record
             const lottery = await tx.lottery.create({
                 data: {
-                    agentId: data.agentId,
+                    agentId: agent.id, // Use the resolved agent record ID
                     title: data.title,
                     description: data.description,
                     ticketPrice: data.ticketPrice,
@@ -20,7 +27,7 @@ export class LotteryService {
                     },
                 },
             });
-            // 2. Generate tickets automatically (1 to totalTickets)
+            // 3. Generate tickets automatically (1 to totalTickets)
             const ticketsData = Array.from({ length: data.totalTickets }, (_, i) => ({
                 lotteryId: lottery.id,
                 ticketNumber: i + 1,
@@ -40,6 +47,18 @@ export class LotteryService {
             },
             include: {
                 prizeDistribution: true,
+                agent: {
+                    include: {
+                        user: {
+                            select: { name: true }
+                        }
+                    }
+                },
+                _count: {
+                    select: {
+                        tickets: { where: { status: 'SOLD' } }
+                    }
+                }
             },
         });
     }
@@ -48,8 +67,17 @@ export class LotteryService {
             where: { id },
             include: {
                 prizeDistribution: true,
+                agent: {
+                    include: {
+                        user: {
+                            select: { name: true }
+                        }
+                    }
+                },
                 _count: {
-                    select: { tickets: true },
+                    select: {
+                        tickets: { where: { status: 'SOLD' } }
+                    }
                 },
             },
         });
@@ -136,9 +164,10 @@ export class AgentService {
                     select: { title: true }
                 },
                 ticket: {
-                    include: {
-                        // @ts-ignore
-                        user: { select: { name: true } }
+                    select: {
+                        ticketNumber: true,
+                        status: true,
+                        reservedBy: true,
                     }
                 }
             },
