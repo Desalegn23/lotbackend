@@ -32,6 +32,10 @@ router.post('/agent/reserve', authenticate, agentOnly, ReservationController.age
 router.post('/agent/reservations/:id/approve', authenticate, agentOnly, ReservationController.approve);
 router.post('/agent/reservations/:id/reject', authenticate, agentOnly, ReservationController.reject);
 router.post('/agent/lotteries/:id/draw', authenticate, agentOnly, LotteryController.draw);
+router.get('/agent/lotteries', authenticate, agentOnly, LotteryController.listMyLotteries);
+router.get('/agent/reservations', authenticate, agentOnly, ReservationController.listMyReservations);
+router.get('/agent/summary', authenticate, agentOnly, LotteryController.getMyStats);
+router.get('/agent/winners', authenticate, agentOnly, LotteryController.listMyWinners);
 
 // ─────────────────────────────────────────────
 // ADMIN ROUTES (JWT required, role: ADMIN only)

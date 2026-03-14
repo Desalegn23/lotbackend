@@ -42,5 +42,15 @@ export class ReservationController {
             sendError(res, 400, error.message);
         }
     }
+    static async listMyReservations(req, res) {
+        try {
+            const userId = req.user.id;
+            const reservations = await ReservationService.getAgentReservations(userId);
+            sendResponse(res, 200, reservations);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
 }
 //# sourceMappingURL=reservationController.js.map

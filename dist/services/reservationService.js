@@ -139,5 +139,28 @@ export class ReservationService {
             return true;
         });
     }
+    static async getAgentReservations(userId) {
+        const agent = await prisma.agent.findUnique({
+            where: { userId: userId },
+        });
+        if (!agent)
+            throw new Error('Agent profile not found');
+        return await prisma.reservation.findMany({
+            where: {
+                lottery: { agentId: agent.id },
+            },
+            include: {
+                lottery: {
+                    select: { title: true }
+                },
+                tickets: {
+                    include: {
+                        ticket: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
 }
 //# sourceMappingURL=reservationService.js.map

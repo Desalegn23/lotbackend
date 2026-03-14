@@ -63,11 +63,11 @@ export class LotteryController {
      */
     static async create(req, res) {
         try {
-            // @ts-ignore
-            const agentId = req.user.id;
+            // req.user.id is the User model's ID
+            const userId = req.user.id;
             const lottery = await LotteryService.createLottery({
                 ...req.body,
-                agentId,
+                agentId: userId, // The service will look up agent by userId
             });
             sendResponse(res, 201, lottery, 'Lottery created successfully');
         }
@@ -111,6 +111,42 @@ export class LotteryController {
         }
         catch (error) {
             sendError(res, 400, error.message);
+        }
+    }
+    static async listMyLotteries(req, res) {
+        try {
+            const userId = req.user.id;
+            // @ts-ignore
+            const { AgentService } = await import('../services/lotteryService.js');
+            const lotteries = await AgentService.getAgentLotteries(userId);
+            sendResponse(res, 200, lotteries);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
+    static async getMyStats(req, res) {
+        try {
+            const userId = req.user.id;
+            // @ts-ignore
+            const { AgentService } = await import('../services/lotteryService.js');
+            const stats = await AgentService.getAgentStats(userId);
+            sendResponse(res, 200, stats);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
+    static async listMyWinners(req, res) {
+        try {
+            const userId = req.user.id;
+            // @ts-ignore
+            const { AgentService } = await import('../services/lotteryService.js');
+            const winners = await AgentService.getAgentWinners(userId);
+            sendResponse(res, 200, winners);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
         }
     }
 }

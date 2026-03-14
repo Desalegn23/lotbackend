@@ -43,4 +43,14 @@ export class ReservationController {
       sendError(res, 400, error.message);
     }
   }
+
+  static async listMyReservations(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+      const reservations = await ReservationService.getAgentReservations(userId);
+      sendResponse(res, 200, reservations);
+    } catch (error: any) {
+      sendError(res, 500, error.message);
+    }
+  }
 }

@@ -75,3 +75,100 @@ export class LotteryService {
     });
   }
 }
+
+export class AgentService {
+  static async getAgentLotteries(agentId: string) {
+    // Find the agent by userId first to get their agent.id
+    const agent = await prisma.agent.findUnique({
+      where: { userId: agentId },
+    });
+
+    if (!agent) throw new Error('Agent profile not found');
+
+    return await prisma.lottery.findMany({
+      where: {
+        agentId: agent.id,
+      },
+      include: {
+        prizeDistribution: true,
+        _count: {
+          select: { tickets: true, winners: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  static async getAgentStats(userId: string) {
+    const agent = await prisma.agent.findUnique({
+      where: { userId: userId },
+      include: {
+        lotteries: {
+          include: {
+            _count: {
+              select: { tickets: { where: { status: 'SOLD' } } },
+            },
+          },
+        },
+      },
+    });
+
+    if (!agent) throw new Error('Agent profile not found');
+
+    const activeLotteries = await prisma.lottery.count({
+      where: { agentId: agent.id, status: 'ACTIVE' },
+    });
+
+    const pendingReservations = await prisma.reservation.count({
+      where: { 
+        lottery: { agentId: agent.id },
+        status: 'PENDING' 
+      },
+    });
+
+    let totalTicketsSold = 0;
+    let totalRevenue = 0;
+
+    agent.lotteries.forEach((l) => {
+      // @ts-ignore
+      totalTicketsSold += l._count.tickets;
+      // @ts-ignore
+      totalRevenue += l._count.tickets * l.ticketPrice;
+    });
+
+    return {
+      activeLotteries,
+      ticketsSold: totalTicketsSold,
+      pendingReservations,
+      totalRevenue,
+    };
+  }
+
+  static async getAgentWinners(userId: string) {
+    const agent = await prisma.agent.findUnique({
+      where: { userId: userId },
+    });
+
+    if (!agent) throw new Error('Agent profile not found');
+
+    const winners = await prisma.winner.findMany({
+      where: {
+        lottery: { agentId: agent.id },
+      },
+      include: {
+        lottery: {
+          select: { title: true }
+        },
+        ticket: {
+          include: {
+            // @ts-ignore
+            user: { select: { name: true } }
+          }
+        }
+      },
+      orderBy: { drawnAt: 'desc' },
+    });
+
+    return winners;
+  }
+}

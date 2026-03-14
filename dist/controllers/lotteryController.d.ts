@@ -64,5 +64,8 @@ export declare class LotteryController {
     static getById(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static getTickets(req: Request, res: Response): Promise<void>;
     static draw(req: Request, res: Response): Promise<void>;
+    static listMyLotteries(req: Request, res: Response): Promise<void>;
+    static getMyStats(req: Request, res: Response): Promise<void>;
+    static listMyWinners(req: Request, res: Response): Promise<void>;
 }
 //# sourceMappingURL=lotteryController.d.ts.map

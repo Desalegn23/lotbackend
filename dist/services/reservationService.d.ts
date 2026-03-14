@@ -16,5 +16,35 @@ export declare class ReservationService {
     }): Promise<any>;
     static approveReservation(reservationId: string): Promise<boolean>;
     static rejectReservation(reservationId: string): Promise<boolean>;
+    static getAgentReservations(userId: string): Promise<({
+        lottery: {
+            title: string;
+        };
+        tickets: ({
+            ticket: {
+                id: string;
+                status: import("@prisma/client").$Enums.TicketStatus;
+                createdAt: Date;
+                lotteryId: string;
+                ticketNumber: number;
+            };
+        } & {
+            id: string;
+            ticketId: string;
+            reservationId: string;
+        })[];
+    } & {
+        name: string;
+        email: string;
+        phone: string;
+        id: string;
+        status: import("@prisma/client").$Enums.ReservationStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string | null;
+        lotteryId: string;
+        reservedByAgent: boolean;
+        paymentConfirmed: boolean;
+    })[]>;
 }
 //# sourceMappingURL=reservationService.d.ts.map

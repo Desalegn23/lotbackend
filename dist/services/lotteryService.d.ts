@@ -73,4 +73,44 @@ export declare class LotteryService {
         ticketNumber: number;
     }[]>;
 }
+export declare class AgentService {
+    static getAgentLotteries(agentId: string): Promise<({
+        _count: {
+            tickets: number;
+            winners: number;
+        };
+        prizeDistribution: {
+            id: string;
+            position: number;
+            prizeAmount: number;
+            lotteryId: string;
+        }[];
+    } & {
+        id: string;
+        status: import("@prisma/client").$Enums.LotteryStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        title: string;
+        description: string | null;
+        ticketPrice: number;
+        totalTickets: number;
+        drawn: boolean;
+        drawnAt: Date | null;
+        agentId: string;
+    })[]>;
+    static getAgentStats(userId: string): Promise<{
+        activeLotteries: number;
+        ticketsSold: number;
+        pendingReservations: number;
+        totalRevenue: number;
+    }>;
+    static getAgentWinners(userId: string): Promise<{
+        id: string;
+        drawnAt: Date;
+        prizeAmount: number;
+        lotteryId: string;
+        ticketId: string;
+        prizePosition: number;
+    }[]>;
+}
 //# sourceMappingURL=lotteryService.d.ts.map
