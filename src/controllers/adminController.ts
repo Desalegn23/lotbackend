@@ -4,6 +4,16 @@ import { sendResponse, sendError } from "../utils/response.js";
 import bcrypt from "bcrypt";
 import { AdminService } from "../services/adminService.js";
 
+interface Winner {
+  prizeAmount: number;
+}
+
+interface LotteryWithWinners {
+  ticketPrice: number;
+  totalTickets: number;
+  winners: Winner[];
+}
+
 export class AdminController {
 
   //////////////////////////////
@@ -12,16 +22,98 @@ export class AdminController {
 
   static async listAgents(req: Request, res: Response) {
     try {
-
       const agents = await prisma.agent.findMany({
         include: {
           user: true,
-          lotteries: true
+          lotteries: {
+            include: {
+              winners: true
+            }
+          }
         }
       });
 
-      sendResponse(res, 200, agents);
+      const mappedAgents = agents.map((a: any) => {
+        let revenue = 0;
+        a.lotteries.forEach((l: LotteryWithWinners) => {
+          revenue += (l.ticketPrice * l.totalTickets) - l.winners.reduce((s: number, w: Winner) => s + w.prizeAmount, 0);
+        });
 
+        return {
+          id: a.id,
+          name: a.user.name,
+          email: a.user.email,
+          phone: a.user.phone || '',
+          status: a.user.status,
+          bankName: a.bankName || '',
+          accountNumber: a.accountNumber || '',
+          totalLotteries: a.lotteries.length,
+          revenueGenerated: revenue,
+          createdAt: a.createdAt
+        };
+      });
+
+      sendResponse(res, 200, mappedAgents);
+    } catch (error: any) {
+      sendError(res, 500, error.message);
+    }
+  }
+
+  static async getAgentById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const agent = await prisma.agent.findUnique({
+        where: { id: String(id) },
+        include: {
+          user: true,
+          lotteries: {
+            include: {
+              winners: true,
+              prizeDistribution: true,
+              _count: {
+                select: { tickets: { where: { status: 'SOLD' } } }
+              }
+            }
+          }
+        }
+      });
+
+      if (!agent) return sendError(res, 404, "Agent not found");
+
+      let revenue = 0;
+      (agent as any).lotteries.forEach((l: any) => {
+        revenue += (l.ticketPrice * l.totalTickets) - l.winners.reduce((s: number, w: any) => s + w.prizeAmount, 0);
+      });
+
+      const mappedAgent = {
+        id: agent.id,
+        name: agent.user.name,
+        email: agent.user.email,
+        phone: agent.user.phone || '',
+        status: agent.user.status,
+        bankName: agent.bankName || '',
+        accountNumber: agent.accountNumber || '',
+        revenueGenerated: revenue,
+        createdAt: agent.createdAt,
+        lotteries: (agent as any).lotteries.map((l: any) => ({
+          id: l.id,
+          title: l.title,
+          description: l.description,
+          ticketPrice: l.ticketPrice,
+          totalTickets: l.totalTickets,
+          soldTickets: l._count.tickets,
+          status: l.status,
+          createdAt: l.createdAt,
+          prizeDescription: l.description, // fallback
+          prizes: l.prizeDistribution.map((p: any) => ({
+            rank: p.position,
+            amount: p.prizeAmount,
+            description: `Rank ${p.position}`
+          }))
+        }))
+      };
+
+      sendResponse(res, 200, mappedAgent);
     } catch (error: any) {
       sendError(res, 500, error.message);
     }
@@ -47,7 +139,7 @@ export class AdminController {
           data: {
             name,
             email,
-            phone,
+            phone: String(phone || ''),
             role: "AGENT",
             password: hashedPassword
           }
@@ -56,8 +148,8 @@ export class AdminController {
         return tx.agent.create({
           data: {
             userId: user.id,
-            bankName,
-            accountNumber
+            bankName: String(bankName || ''),
+            accountNumber: String(accountNumber || '')
           },
           include: {
             user: true
@@ -79,13 +171,13 @@ export class AdminController {
       const agent = await prisma.agent.update({
         where: { id: String(req.params.id) },
         data: {
-          bankName,
-          accountNumber,
+          bankName: String(bankName || ''),
+          accountNumber: String(accountNumber || ''),
           user: {
             update: {
               name,
               email,
-              phone,
+              phone: String(phone || ''),
               status
             }
           }
@@ -214,11 +306,20 @@ export class AdminController {
               user: true
             }
           },
-          prizeDistribution: true
+          prizeDistribution: true,
+          _count: {
+            select: { tickets: { where: { status: 'SOLD' } } }
+          }
         }
       });
 
-      sendResponse(res, 200, lotteries);
+      const mappedLotteries = lotteries.map((l: any) => ({
+        ...l,
+        soldTickets: l._count.tickets,
+        prizes: l.prizeDistribution
+      }));
+
+      sendResponse(res, 200, mappedLotteries);
 
     } catch (error: any) {
       sendError(res, 500, error.message);
@@ -267,7 +368,18 @@ export class AdminController {
         }
       });
 
-      sendResponse(res, 200, winners);
+      const mappedWinners = winners.map((w: any) => ({
+        id: w.id,
+        lotteryId: w.lotteryId,
+        lotteryTitle: w.lottery.title,
+        winnerName: 'Winner', // Fallback
+        ticketNumber: w.ticket.ticketNumber,
+        prizeAmount: w.prizeAmount,
+        prizeDescription: `Rank ${w.prizePosition}`,
+        drawDate: w.drawnAt.toISOString()
+      }));
+
+      sendResponse(res, 200, mappedWinners);
 
     } catch (error: any) {
       sendError(res, 500, error.message);

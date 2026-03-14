@@ -8,7 +8,9 @@ export class AdminService {
       ticketCount,
       userCount,
       agentCount,
-      allLotteries
+      allLotteries,
+      winnerStats,
+      salesToday
     ] = await Promise.all([
       prisma.lottery.count(),
       prisma.lottery.count({ where: { status: 'ACTIVE' } }),
@@ -19,11 +21,27 @@ export class AdminService {
         include: {
           winners: true
         }
+      }),
+      prisma.winner.aggregate({
+        _sum: {
+          prizeAmount: true
+        },
+        _count: true,
+        _max: {
+          prizeAmount: true
+        }
+      }),
+      prisma.ticket.count({
+        where: {
+          status: 'SOLD',
+          createdAt: {
+            gte: new Date(new Date().setHours(0, 0, 0, 0))
+          }
+        }
       })
     ]);
 
-    // Calculate Global Revenue (Sum of all agent revenues for now)
-    // Formula: (ticketPrice * totalTickets) - (sum of winner prizeAmount)
+    // Calculate Global Revenue
     let totalRevenue = 0;
     allLotteries.forEach(l => {
       const lotteryRevenue = (l.ticketPrice * l.totalTickets);
@@ -37,7 +55,16 @@ export class AdminService {
       tickets: ticketCount,
       totalUsers: userCount,
       totalAgents: agentCount,
-      totalRevenue
+      totalRevenue,
+      totalPayouts: winnerStats._sum.prizeAmount || 0,
+      totalWinners: winnerStats._count || 0,
+      biggestWin: winnerStats._max.prizeAmount || 0,
+      salesToday: salesToday,
+      systemStatus: {
+        api: 'Online',
+        db: 'Online',
+        payments: 'Delayed'
+      }
     };
   }
 

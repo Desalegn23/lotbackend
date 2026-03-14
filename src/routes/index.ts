@@ -41,6 +41,7 @@ router.get('/agent/winners', authenticate, agentOnly, LotteryController.listMyWi
 // ADMIN ROUTES (JWT required, role: ADMIN only)
 // ─────────────────────────────────────────────
 router.get('/admin/agents', authenticate, adminOnly, AdminController.listAgents);
+router.get('/admin/agents/:id', authenticate, adminOnly, AdminController.getAgentById);
 router.post('/admin/agents', authenticate, adminOnly, AdminController.createAgent);
 router.put('/admin/agents/:id', authenticate, adminOnly, AdminController.updateAgent);
 router.patch('/admin/agents/:id/deactivate', authenticate, adminOnly, AdminController.deactivateAgent);
