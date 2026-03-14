@@ -15,10 +15,29 @@ interface LotteryWithWinners {
 }
 
 export class AdminController {
+  
+  private static mapAgentResponse(a: any) {
+    let revenue = 0;
+    if (a.lotteries) {
+      a.lotteries.forEach((l: any) => {
+        const prizeTotal = l.winners ? l.winners.reduce((s: number, w: any) => s + (w.prizeAmount || 0), 0) : 0;
+        revenue += (l.ticketPrice * l.totalTickets) - prizeTotal;
+      });
+    }
 
-  //////////////////////////////
-  // AGENTS
-  //////////////////////////////
+    return {
+      id: a.id,
+      name: a.user.name,
+      email: a.user.email,
+      phone: a.user.phone || '',
+      status: a.user.status,
+      bankName: a.bankName || '',
+      accountNumber: a.accountNumber || '',
+      totalLotteries: a.lotteries ? a.lotteries.length : 0,
+      revenueGenerated: revenue,
+      createdAt: a.user.createdAt || a.createdAt
+    };
+  }
 
   static async listAgents(req: Request, res: Response) {
     try {
@@ -33,26 +52,7 @@ export class AdminController {
         }
       });
 
-      const mappedAgents = agents.map((a: any) => {
-        let revenue = 0;
-        a.lotteries.forEach((l: LotteryWithWinners) => {
-          revenue += (l.ticketPrice * l.totalTickets) - l.winners.reduce((s: number, w: Winner) => s + w.prizeAmount, 0);
-        });
-
-        return {
-          id: a.id,
-          name: a.user.name,
-          email: a.user.email,
-          phone: a.user.phone || '',
-          status: a.user.status,
-          bankName: a.bankName || '',
-          accountNumber: a.accountNumber || '',
-          totalLotteries: a.lotteries.length,
-          revenueGenerated: revenue,
-          createdAt: a.createdAt
-        };
-      });
-
+      const mappedAgents = agents.map(a => this.mapAgentResponse(a));
       sendResponse(res, 200, mappedAgents);
     } catch (error: any) {
       sendError(res, 500, error.message);
@@ -80,21 +80,10 @@ export class AdminController {
 
       if (!agent) return sendError(res, 404, "Agent not found");
 
-      let revenue = 0;
-      (agent as any).lotteries.forEach((l: any) => {
-        revenue += (l.ticketPrice * l.totalTickets) - l.winners.reduce((s: number, w: any) => s + w.prizeAmount, 0);
-      });
-
+      const baseMapped = this.mapAgentResponse(agent);
+      
       const mappedAgent = {
-        id: agent.id,
-        name: agent.user.name,
-        email: agent.user.email,
-        phone: agent.user.phone || '',
-        status: agent.user.status,
-        bankName: agent.bankName || '',
-        accountNumber: agent.accountNumber || '',
-        revenueGenerated: revenue,
-        createdAt: agent.createdAt,
+        ...baseMapped,
         lotteries: (agent as any).lotteries.map((l: any) => ({
           id: l.id,
           title: l.title,
@@ -104,7 +93,6 @@ export class AdminController {
           soldTickets: l._count.tickets,
           status: l.status,
           createdAt: l.createdAt,
-          prizeDescription: l.description, // fallback
           prizes: l.prizeDistribution.map((p: any) => ({
             rank: p.position,
             amount: p.prizeAmount,
@@ -157,7 +145,8 @@ export class AdminController {
         });
       });
 
-      sendResponse(res, 201, agent, "Agent created successfully");
+      const mappedAgent = this.mapAgentResponse(agent);
+      sendResponse(res, 201, mappedAgent, "Agent created successfully");
     } catch (error: any) {
       sendError(res, 400, error.message);
     }
@@ -185,7 +174,8 @@ export class AdminController {
         include: { user: true }
       });
 
-      sendResponse(res, 200, agent, "Agent updated successfully");
+      const mappedAgent = this.mapAgentResponse(agent);
+      sendResponse(res, 200, mappedAgent, "Agent updated successfully");
     } catch (error: any) {
       sendError(res, 400, error.message);
     }
@@ -207,7 +197,8 @@ export class AdminController {
         include: { user: true }
       });
 
-      sendResponse(res, 200, agent, "Agent deactivated successfully");
+      const mappedAgent = this.mapAgentResponse(agent);
+      sendResponse(res, 200, mappedAgent, "Agent deactivated successfully");
 
     } catch (error: any) {
       sendError(res, 400, error.message);
@@ -230,7 +221,8 @@ export class AdminController {
         include: { user: true }
       });
 
-      sendResponse(res, 200, agent, "Agent activated successfully");
+      const mappedAgent = this.mapAgentResponse(agent);
+      sendResponse(res, 200, mappedAgent, "Agent activated successfully");
 
     } catch (error: any) {
       sendError(res, 400, error.message);
@@ -255,7 +247,8 @@ export class AdminController {
         include: { user: true }
       });
 
-      sendResponse(res, 200, agent, "Agent password reset successfully");
+      const mappedAgent = this.mapAgentResponse(agent);
+      sendResponse(res, 200, mappedAgent, "Agent password reset successfully");
 
     } catch (error: any) {
       sendError(res, 400, error.message);
