@@ -11,7 +11,7 @@ export declare class LotteryService {
         }[];
     }): Promise<{
         id: string;
-        status: import(".prisma/client").$Enums.LotteryStatus;
+        status: import("@prisma/client").$Enums.LotteryStatus;
         createdAt: Date;
         updatedAt: Date;
         title: string;
@@ -31,7 +31,7 @@ export declare class LotteryService {
         }[];
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.LotteryStatus;
+        status: import("@prisma/client").$Enums.LotteryStatus;
         createdAt: Date;
         updatedAt: Date;
         title: string;
@@ -54,7 +54,7 @@ export declare class LotteryService {
         }[];
     } & {
         id: string;
-        status: import(".prisma/client").$Enums.LotteryStatus;
+        status: import("@prisma/client").$Enums.LotteryStatus;
         createdAt: Date;
         updatedAt: Date;
         title: string;
@@ -67,7 +67,7 @@ export declare class LotteryService {
     }) | null>;
     static getLotteryTickets(id: string): Promise<{
         id: string;
-        status: import(".prisma/client").$Enums.TicketStatus;
+        status: import("@prisma/client").$Enums.TicketStatus;
         createdAt: Date;
         lotteryId: string;
         ticketNumber: number;

@@ -8,7 +8,7 @@ export declare class DrawService {
     static getLotteryWinners(lotteryId: string): Promise<({
         ticket: {
             id: string;
-            status: import(".prisma/client").$Enums.TicketStatus;
+            status: import("@prisma/client").$Enums.TicketStatus;
             createdAt: Date;
             lotteryId: string;
             ticketNumber: number;

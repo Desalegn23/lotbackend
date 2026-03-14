@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.LotteryController = void 0;
-const lotteryService_js_1 = require("../services/lotteryService.js");
-const drawService_js_1 = require("../services/drawService.js");
-const response_js_1 = require("../utils/response.js");
+import { LotteryService } from '../services/lotteryService.js';
+import { DrawService } from '../services/drawService.js';
+import { sendResponse, sendError } from '../utils/response.js';
 /**
  * @openapi
  * components:
@@ -25,7 +22,7 @@ const response_js_1 = require("../utils/response.js");
  *           type: string
  *           enum: [DRAFT, ACTIVE, COMPLETED]
  */
-class LotteryController {
+export class LotteryController {
     /**
      * @openapi
      * /api/agent/lotteries:
@@ -68,54 +65,53 @@ class LotteryController {
         try {
             // @ts-ignore
             const agentId = req.user.id;
-            const lottery = await lotteryService_js_1.LotteryService.createLottery({
+            const lottery = await LotteryService.createLottery({
                 ...req.body,
                 agentId,
             });
-            (0, response_js_1.sendResponse)(res, 201, lottery, 'Lottery created successfully');
+            sendResponse(res, 201, lottery, 'Lottery created successfully');
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 400, error.message);
+            sendError(res, 400, error.message);
         }
     }
     static async list(req, res) {
         try {
-            const lotteries = await lotteryService_js_1.LotteryService.getActiveLotteries();
-            (0, response_js_1.sendResponse)(res, 200, lotteries);
+            const lotteries = await LotteryService.getActiveLotteries();
+            sendResponse(res, 200, lotteries);
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 500, error.message);
+            sendError(res, 500, error.message);
         }
     }
     static async getById(req, res) {
         try {
-            const lottery = await lotteryService_js_1.LotteryService.getLotteryById(req.params.id);
+            const lottery = await LotteryService.getLotteryById(req.params.id);
             if (!lottery)
-                return (0, response_js_1.sendError)(res, 404, 'Lottery not found');
-            (0, response_js_1.sendResponse)(res, 200, lottery);
+                return sendError(res, 404, 'Lottery not found');
+            sendResponse(res, 200, lottery);
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 500, error.message);
+            sendError(res, 500, error.message);
         }
     }
     static async getTickets(req, res) {
         try {
-            const tickets = await lotteryService_js_1.LotteryService.getLotteryTickets(req.params.id);
-            (0, response_js_1.sendResponse)(res, 200, tickets);
+            const tickets = await LotteryService.getLotteryTickets(req.params.id);
+            sendResponse(res, 200, tickets);
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 500, error.message);
+            sendError(res, 500, error.message);
         }
     }
     static async draw(req, res) {
         try {
-            const winners = await drawService_js_1.DrawService.drawWinners(req.params.id);
-            (0, response_js_1.sendResponse)(res, 200, winners, 'Winners drawn successfully');
+            const winners = await DrawService.drawWinners(req.params.id);
+            sendResponse(res, 200, winners, 'Winners drawn successfully');
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 400, error.message);
+            sendError(res, 400, error.message);
         }
     }
 }
-exports.LotteryController = LotteryController;
 //# sourceMappingURL=lotteryController.js.map

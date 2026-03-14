@@ -1,27 +1,21 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DrawService = void 0;
-const prisma_js_1 = __importDefault(require("../db/prisma.js"));
-const client_1 = require("@prisma/client");
-class DrawService {
+import prisma from '../db/prisma.js';
+import { LotteryStatus, TicketStatus } from '@prisma/client';
+export class DrawService {
     static async drawWinners(lotteryId) {
-        return await prisma_js_1.default.$transaction(async (tx) => {
+        return await prisma.$transaction(async (tx) => {
             // 1. Get lottery and prize distribution
             const lottery = await tx.lottery.findUnique({
                 where: { id: lotteryId },
                 include: { prizeDistribution: true },
             });
-            if (!lottery || lottery.status !== client_1.LotteryStatus.ACTIVE) {
+            if (!lottery || lottery.status !== LotteryStatus.ACTIVE) {
                 throw new Error('Lottery not found or not in ACTIVE status');
             }
             // 2. Get all SOLD tickets
             const soldTickets = await tx.ticket.findMany({
                 where: {
                     lotteryId,
-                    status: client_1.TicketStatus.SOLD,
+                    status: TicketStatus.SOLD,
                 },
             });
             if (soldTickets.length === 0) {
@@ -52,13 +46,13 @@ class DrawService {
             // 5. Mark lottery as COMPLETED
             await tx.lottery.update({
                 where: { id: lotteryId },
-                data: { status: client_1.LotteryStatus.COMPLETED },
+                data: { status: LotteryStatus.COMPLETED },
             });
             return winners;
         });
     }
     static async getLotteryWinners(lotteryId) {
-        return await prisma_js_1.default.winner.findMany({
+        return await prisma.winner.findMany({
             where: { lotteryId },
             include: {
                 ticket: true,
@@ -67,5 +61,4 @@ class DrawService {
         });
     }
 }
-exports.DrawService = DrawService;
 //# sourceMappingURL=drawService.js.map

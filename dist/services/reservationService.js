@@ -1,20 +1,14 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ReservationService = void 0;
-const prisma_js_1 = __importDefault(require("../db/prisma.js"));
-const client_1 = require("@prisma/client");
-class ReservationService {
+import prisma from '../db/prisma.js';
+import { ReservationStatus, TicketStatus } from '@prisma/client';
+export class ReservationService {
     static async createPublicReservation(data) {
-        return await prisma_js_1.default.$transaction(async (tx) => {
+        return await prisma.$transaction(async (tx) => {
             // 1. Verify tickets are available
             const tickets = await tx.ticket.findMany({
                 where: {
                     id: { in: data.ticketIds },
                     lotteryId: data.lotteryId,
-                    status: client_1.TicketStatus.AVAILABLE,
+                    status: TicketStatus.AVAILABLE,
                 },
             });
             if (tickets.length !== data.ticketIds.length) {
@@ -27,7 +21,7 @@ class ReservationService {
                     name: data.name,
                     email: data.email,
                     phone: data.phone,
-                    status: client_1.ReservationStatus.PENDING,
+                    status: ReservationStatus.PENDING,
                     Tickets: {
                         create: data.ticketIds.map((id) => ({
                             ticketId: id,
@@ -41,7 +35,7 @@ class ReservationService {
                     id: { in: data.ticketIds },
                 },
                 data: {
-                    status: client_1.TicketStatus.RESERVED,
+                    status: TicketStatus.RESERVED,
                     reservedBy: data.name,
                 },
             });
@@ -49,13 +43,13 @@ class ReservationService {
         });
     }
     static async createAgentReservation(data) {
-        return await prisma_js_1.default.$transaction(async (tx) => {
+        return await prisma.$transaction(async (tx) => {
             // 1. Verify tickets are available
             const tickets = await tx.ticket.findMany({
                 where: {
                     id: { in: data.ticketIds },
                     lotteryId: data.lotteryId,
-                    status: client_1.TicketStatus.AVAILABLE,
+                    status: TicketStatus.AVAILABLE,
                 },
             });
             if (tickets.length !== data.ticketIds.length) {
@@ -68,7 +62,7 @@ class ReservationService {
                     name: data.name,
                     email: data.email,
                     phone: data.phone,
-                    status: client_1.ReservationStatus.APPROVED,
+                    status: ReservationStatus.APPROVED,
                     reservedByAgent: true,
                     paymentConfirmed: true,
                     Tickets: {
@@ -84,7 +78,7 @@ class ReservationService {
                     id: { in: data.ticketIds },
                 },
                 data: {
-                    status: client_1.TicketStatus.SOLD,
+                    status: TicketStatus.SOLD,
                     reservedBy: data.name,
                 },
             });
@@ -92,19 +86,19 @@ class ReservationService {
         });
     }
     static async approveReservation(reservationId) {
-        return await prisma_js_1.default.$transaction(async (tx) => {
+        return await prisma.$transaction(async (tx) => {
             const reservation = await tx.reservation.findUnique({
                 where: { id: reservationId },
                 include: { Tickets: true },
             });
-            if (!reservation || reservation.status !== client_1.ReservationStatus.PENDING) {
+            if (!reservation || reservation.status !== ReservationStatus.PENDING) {
                 throw new Error('Invalid reservation or status');
             }
             // Update reservation status
             await tx.reservation.update({
                 where: { id: reservationId },
                 data: {
-                    status: client_1.ReservationStatus.APPROVED,
+                    status: ReservationStatus.APPROVED,
                     paymentConfirmed: true,
                 },
             });
@@ -112,25 +106,25 @@ class ReservationService {
             const ticketIds = reservation.Tickets.map((rt) => rt.ticketId);
             await tx.ticket.updateMany({
                 where: { id: { in: ticketIds } },
-                data: { status: client_1.TicketStatus.SOLD },
+                data: { status: TicketStatus.SOLD },
             });
             return true;
         });
     }
     static async rejectReservation(reservationId) {
-        return await prisma_js_1.default.$transaction(async (tx) => {
+        return await prisma.$transaction(async (tx) => {
             const reservation = await tx.reservation.findUnique({
                 where: { id: reservationId },
                 include: { Tickets: true },
             });
-            if (!reservation || reservation.status !== client_1.ReservationStatus.PENDING) {
+            if (!reservation || reservation.status !== ReservationStatus.PENDING) {
                 throw new Error('Invalid reservation or status');
             }
             // Update reservation status
             await tx.reservation.update({
                 where: { id: reservationId },
                 data: {
-                    status: client_1.ReservationStatus.REJECTED,
+                    status: ReservationStatus.REJECTED,
                 },
             });
             // Update tickets to AVAILABLE
@@ -138,7 +132,7 @@ class ReservationService {
             await tx.ticket.updateMany({
                 where: { id: { in: ticketIds } },
                 data: {
-                    status: client_1.TicketStatus.AVAILABLE,
+                    status: TicketStatus.AVAILABLE,
                     reservedBy: null
                 },
             });
@@ -146,5 +140,4 @@ class ReservationService {
         });
     }
 }
-exports.ReservationService = ReservationService;
 //# sourceMappingURL=reservationService.js.map

@@ -1,14 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.LotteryService = void 0;
-const prisma_js_1 = __importDefault(require("../db/prisma.js"));
-const client_1 = require("@prisma/client");
-class LotteryService {
+import prisma from '../db/prisma.js';
+import { LotteryStatus, TicketStatus } from '@prisma/client';
+export class LotteryService {
     static async createLottery(data) {
-        return await prisma_js_1.default.$transaction(async (tx) => {
+        return await prisma.$transaction(async (tx) => {
             // 1. Create the lottery record
             const lottery = await tx.lottery.create({
                 data: {
@@ -17,7 +11,7 @@ class LotteryService {
                     description: data.description,
                     ticketPrice: data.ticketPrice,
                     totalTickets: data.totalTickets,
-                    status: client_1.LotteryStatus.DRAFT,
+                    status: LotteryStatus.DRAFT,
                     prizeDistribution: {
                         create: data.prizes.map((p) => ({
                             position: p.position,
@@ -30,7 +24,7 @@ class LotteryService {
             const ticketsData = Array.from({ length: data.totalTickets }, (_, i) => ({
                 lotteryId: lottery.id,
                 ticketNumber: i + 1,
-                status: client_1.TicketStatus.AVAILABLE,
+                status: TicketStatus.AVAILABLE,
             }));
             // Bulk create tickets
             await tx.ticket.createMany({
@@ -40,9 +34,9 @@ class LotteryService {
         });
     }
     static async getActiveLotteries() {
-        return await prisma_js_1.default.lottery.findMany({
+        return await prisma.lottery.findMany({
             where: {
-                status: client_1.LotteryStatus.ACTIVE,
+                status: LotteryStatus.ACTIVE,
             },
             include: {
                 prizeDistribution: true,
@@ -50,7 +44,7 @@ class LotteryService {
         });
     }
     static async getLotteryById(id) {
-        return await prisma_js_1.default.lottery.findUnique({
+        return await prisma.lottery.findUnique({
             where: { id },
             include: {
                 prizeDistribution: true,
@@ -61,11 +55,10 @@ class LotteryService {
         });
     }
     static async getLotteryTickets(id) {
-        return await prisma_js_1.default.ticket.findMany({
+        return await prisma.ticket.findMany({
             where: { lotteryId: id },
             orderBy: { ticketNumber: 'asc' },
         });
     }
 }
-exports.LotteryService = LotteryService;
 //# sourceMappingURL=lotteryService.js.map

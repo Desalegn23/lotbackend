@@ -1,41 +1,35 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.AdminController = void 0;
-const prisma_js_1 = __importDefault(require("../db/prisma.js"));
-const response_js_1 = require("../utils/response.js");
-const bcrypt_1 = __importDefault(require("bcrypt"));
-class AdminController {
+import prisma from "../db/prisma.js";
+import { sendResponse, sendError } from "../utils/response.js";
+import bcrypt from "bcrypt";
+export class AdminController {
     //////////////////////////////
     // AGENTS
     //////////////////////////////
     static async listAgents(req, res) {
         try {
-            const agents = await prisma_js_1.default.agent.findMany({
+            const agents = await prisma.agent.findMany({
                 include: {
                     user: true,
                     lotteries: true
                 }
             });
-            (0, response_js_1.sendResponse)(res, 200, agents);
+            sendResponse(res, 200, agents);
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 500, error.message);
+            sendError(res, 500, error.message);
         }
     }
     static async createAgent(req, res) {
         try {
             const { name, email, phone } = req.body;
-            const existingUser = await prisma_js_1.default.user.findUnique({
+            const existingUser = await prisma.user.findUnique({
                 where: { email }
             });
             if (existingUser) {
-                return (0, response_js_1.sendError)(res, 400, "Email already exists");
+                return sendError(res, 400, "Email already exists");
             }
-            const hashedPassword = await bcrypt_1.default.hash("password", 10);
-            const agent = await prisma_js_1.default.$transaction(async (tx) => {
+            const hashedPassword = await bcrypt.hash("password", 10);
+            const agent = await prisma.$transaction(async (tx) => {
                 const user = await tx.user.create({
                     data: {
                         name,
@@ -54,16 +48,16 @@ class AdminController {
                     }
                 });
             });
-            (0, response_js_1.sendResponse)(res, 201, agent, "Agent created successfully");
+            sendResponse(res, 201, agent, "Agent created successfully");
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 400, error.message);
+            sendError(res, 400, error.message);
         }
     }
     static async updateAgent(req, res) {
         try {
             const { name, email, phone } = req.body;
-            const agent = await prisma_js_1.default.agent.update({
+            const agent = await prisma.agent.update({
                 where: { id: String(req.params.id) },
                 data: {
                     user: {
@@ -76,15 +70,15 @@ class AdminController {
                 },
                 include: { user: true }
             });
-            (0, response_js_1.sendResponse)(res, 200, agent, "Agent updated successfully");
+            sendResponse(res, 200, agent, "Agent updated successfully");
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 400, error.message);
+            sendError(res, 400, error.message);
         }
     }
     static async deactivateAgent(req, res) {
         try {
-            const agent = await prisma_js_1.default.agent.update({
+            const agent = await prisma.agent.update({
                 where: { id: String(req.params.id) },
                 data: {
                     user: {
@@ -95,15 +89,15 @@ class AdminController {
                 },
                 include: { user: true }
             });
-            (0, response_js_1.sendResponse)(res, 200, agent, "Agent deactivated successfully");
+            sendResponse(res, 200, agent, "Agent deactivated successfully");
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 400, error.message);
+            sendError(res, 400, error.message);
         }
     }
     static async activateAgent(req, res) {
         try {
-            const agent = await prisma_js_1.default.agent.update({
+            const agent = await prisma.agent.update({
                 where: { id: String(req.params.id) },
                 data: {
                     user: {
@@ -114,16 +108,16 @@ class AdminController {
                 },
                 include: { user: true }
             });
-            (0, response_js_1.sendResponse)(res, 200, agent, "Agent activated successfully");
+            sendResponse(res, 200, agent, "Agent activated successfully");
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 400, error.message);
+            sendError(res, 400, error.message);
         }
     }
     static async resetAgentPassword(req, res) {
         try {
-            const hashedPassword = await bcrypt_1.default.hash("password", 10);
-            const agent = await prisma_js_1.default.agent.update({
+            const hashedPassword = await bcrypt.hash("password", 10);
+            const agent = await prisma.agent.update({
                 where: { id: String(req.params.id) },
                 data: {
                     user: {
@@ -134,15 +128,15 @@ class AdminController {
                 },
                 include: { user: true }
             });
-            (0, response_js_1.sendResponse)(res, 200, agent, "Agent password reset successfully");
+            sendResponse(res, 200, agent, "Agent password reset successfully");
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 400, error.message);
+            sendError(res, 400, error.message);
         }
     }
     static async deleteAgent(req, res) {
         try {
-            await prisma_js_1.default.$transaction(async (tx) => {
+            await prisma.$transaction(async (tx) => {
                 const agent = await tx.agent.findUnique({
                     where: { id: String(req.params.id) }
                 });
@@ -155,10 +149,10 @@ class AdminController {
                     where: { id: agent.userId }
                 });
             });
-            (0, response_js_1.sendResponse)(res, 200, null, "Agent deleted successfully");
+            sendResponse(res, 200, null, "Agent deleted successfully");
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 400, error.message);
+            sendError(res, 400, error.message);
         }
     }
     //////////////////////////////
@@ -166,7 +160,7 @@ class AdminController {
     //////////////////////////////
     static async listLotteries(req, res) {
         try {
-            const lotteries = await prisma_js_1.default.lottery.findMany({
+            const lotteries = await prisma.lottery.findMany({
                 include: {
                     agent: {
                         include: {
@@ -176,10 +170,10 @@ class AdminController {
                     prizeDistribution: true
                 }
             });
-            (0, response_js_1.sendResponse)(res, 200, lotteries);
+            sendResponse(res, 200, lotteries);
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 500, error.message);
+            sendError(res, 500, error.message);
         }
     }
     //////////////////////////////
@@ -189,7 +183,7 @@ class AdminController {
         try {
             const page = Number(req.query.page) || 1;
             const limit = Number(req.query.limit) || 50;
-            const tickets = await prisma_js_1.default.ticket.findMany({
+            const tickets = await prisma.ticket.findMany({
                 skip: (page - 1) * limit,
                 take: limit,
                 orderBy: { createdAt: "desc" },
@@ -197,10 +191,10 @@ class AdminController {
                     lottery: true
                 }
             });
-            (0, response_js_1.sendResponse)(res, 200, tickets);
+            sendResponse(res, 200, tickets);
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 500, error.message);
+            sendError(res, 500, error.message);
         }
     }
     //////////////////////////////
@@ -208,16 +202,16 @@ class AdminController {
     //////////////////////////////
     static async listWinners(req, res) {
         try {
-            const winners = await prisma_js_1.default.winner.findMany({
+            const winners = await prisma.winner.findMany({
                 include: {
                     lottery: true,
                     ticket: true
                 }
             });
-            (0, response_js_1.sendResponse)(res, 200, winners);
+            sendResponse(res, 200, winners);
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 500, error.message);
+            sendError(res, 500, error.message);
         }
     }
     //////////////////////////////
@@ -226,14 +220,14 @@ class AdminController {
     static async monitorSystem(req, res) {
         try {
             const [lotteryCount, ticketCount, winnerCount, activeReservations] = await Promise.all([
-                prisma_js_1.default.lottery.count(),
-                prisma_js_1.default.ticket.count(),
-                prisma_js_1.default.winner.count(),
-                prisma_js_1.default.reservation.count({
+                prisma.lottery.count(),
+                prisma.ticket.count(),
+                prisma.winner.count(),
+                prisma.reservation.count({
                     where: { status: "PENDING" }
                 })
             ]);
-            (0, response_js_1.sendResponse)(res, 200, {
+            sendResponse(res, 200, {
                 lotteries: lotteryCount,
                 tickets: ticketCount,
                 winners: winnerCount,
@@ -241,9 +235,8 @@ class AdminController {
             });
         }
         catch (error) {
-            (0, response_js_1.sendError)(res, 500, error.message);
+            sendError(res, 500, error.message);
         }
     }
 }
-exports.AdminController = AdminController;
 //# sourceMappingURL=adminController.js.map
