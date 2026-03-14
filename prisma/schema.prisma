@@ -93,7 +93,7 @@ model Lottery {
   ticketPrice  Float
   totalTickets Int
 
-  status       LotteryStatus @default(DRAFT)
+  status       LotteryStatus @default(ACTIVE)
 
   drawn        Boolean       @default(false)
   drawnAt      DateTime?

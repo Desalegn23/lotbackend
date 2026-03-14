@@ -57,7 +57,12 @@ export class DrawService {
         data: { status: LotteryStatus.COMPLETED },
       });
 
-      return winners;
+      // 6. Fetch full winner details to return
+      return await tx.winner.findMany({
+        where: { lotteryId },
+        include: { ticket: true },
+        orderBy: { prizePosition: 'asc' },
+      });
     });
   }
 
