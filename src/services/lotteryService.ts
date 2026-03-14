@@ -3,18 +3,27 @@ import { LotteryStatus, TicketStatus } from '@prisma/client';
 
 export class LotteryService {
   static async createLottery(data: {
-    agentId: string;
+    agentId: string; // This is the userId from the auth middleware
     title: string;
     description?: string;
     ticketPrice: number;
     totalTickets: number;
     prizes: { position: number; amount: number }[];
   }) {
+    // 1. Resolve agent.id from userId
+    const agent = await prisma.agent.findUnique({
+      where: { userId: data.agentId },
+    });
+
+    if (!agent) {
+      throw new Error('Agent profile not found');
+    }
+
     return await prisma.$transaction(async (tx) => {
-      // 1. Create the lottery record
+      // 2. Create the lottery record
       const lottery = await tx.lottery.create({
         data: {
-          agentId: data.agentId,
+          agentId: agent.id, // Use the resolved agent record ID
           title: data.title,
           description: data.description,
           ticketPrice: data.ticketPrice,
@@ -29,7 +38,7 @@ export class LotteryService {
         },
       });
 
-      // 2. Generate tickets automatically (1 to totalTickets)
+      // 3. Generate tickets automatically (1 to totalTickets)
       const ticketsData = Array.from({ length: data.totalTickets }, (_, i) => ({
         lotteryId: lottery.id,
         ticketNumber: i + 1,
