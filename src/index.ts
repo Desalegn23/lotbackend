@@ -22,7 +22,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`,
+        // url: `http://localhost:${PORT}`,
+        url: `https://lotbackend-arib.onrender.com`,
       },
     ],
   },
