@@ -11,5 +11,6 @@ export declare class AdminController {
     static listTickets(req: Request, res: Response): Promise<void>;
     static listWinners(req: Request, res: Response): Promise<void>;
     static monitorSystem(req: Request, res: Response): Promise<void>;
+    static getDashboardActivity(req: Request, res: Response): Promise<void>;
 }
 //# sourceMappingURL=adminController.d.ts.map

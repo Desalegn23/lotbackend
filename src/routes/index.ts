@@ -52,5 +52,6 @@ router.get('/admin/lotteries', authenticate, adminOnly, AdminController.listLott
 router.get('/admin/tickets', authenticate, adminOnly, AdminController.listTickets);
 router.get('/admin/winners', authenticate, adminOnly, AdminController.listWinners);
 router.get('/admin/summary', authenticate, adminOnly, AdminController.monitorSystem);
+router.get('/admin/activities', authenticate, adminOnly, AdminController.getDashboardActivity);
 
 export default router;

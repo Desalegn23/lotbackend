@@ -1,6 +1,7 @@
 import prisma from "../db/prisma.js";
 import { sendResponse, sendError } from "../utils/response.js";
 import bcrypt from "bcrypt";
+import { AdminService } from "../services/adminService.js";
 export class AdminController {
     //////////////////////////////
     // AGENTS
@@ -224,20 +225,17 @@ export class AdminController {
     //////////////////////////////
     static async monitorSystem(req, res) {
         try {
-            const [lotteryCount, ticketCount, winnerCount, activeReservations] = await Promise.all([
-                prisma.lottery.count(),
-                prisma.ticket.count(),
-                prisma.winner.count(),
-                prisma.reservation.count({
-                    where: { status: "PENDING" }
-                })
-            ]);
-            sendResponse(res, 200, {
-                lotteries: lotteryCount,
-                tickets: ticketCount,
-                winners: winnerCount,
-                pendingReservations: activeReservations
-            });
+            const summary = await AdminService.getSystemSummary();
+            sendResponse(res, 200, summary);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
+    static async getDashboardActivity(req, res) {
+        try {
+            const activities = await AdminService.getRecentActivities();
+            sendResponse(res, 200, activities);
         }
         catch (error) {
             sendError(res, 500, error.message);
