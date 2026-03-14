@@ -31,7 +31,7 @@ export class ReservationService {
           email: data.email,
           phone: data.phone,
           status: ReservationStatus.PENDING,
-          Tickets: {
+          tickets: {
             create: data.ticketIds.map((id) => ({
               ticketId: id,
             })),
@@ -86,7 +86,7 @@ export class ReservationService {
           status: ReservationStatus.APPROVED,
           reservedByAgent: true,
           paymentConfirmed: true,
-          Tickets: {
+          tickets: {
             create: data.ticketIds.map((id) => ({
               ticketId: id,
             })),
@@ -113,7 +113,7 @@ export class ReservationService {
     return await prisma.$transaction(async (tx: any) => {
       const reservation = await tx.reservation.findUnique({
         where: { id: reservationId },
-        include: { Tickets: true },
+        include: { tickets: true },
       });
 
       if (!reservation || reservation.status !== ReservationStatus.PENDING) {
@@ -130,7 +130,7 @@ export class ReservationService {
       });
 
       // Update tickets to SOLD
-      const ticketIds = reservation.Tickets.map((rt: any) => rt.ticketId);
+      const ticketIds = reservation.tickets.map((rt: any) => rt.ticketId);
       await tx.ticket.updateMany({
         where: { id: { in: ticketIds } },
         data: { status: TicketStatus.SOLD },
@@ -144,7 +144,7 @@ export class ReservationService {
     return await prisma.$transaction(async (tx: any) => {
       const reservation = await tx.reservation.findUnique({
         where: { id: reservationId },
-        include: { Tickets: true },
+        include: { tickets: true },
       });
 
       if (!reservation || reservation.status !== ReservationStatus.PENDING) {
@@ -160,7 +160,7 @@ export class ReservationService {
       });
 
       // Update tickets to AVAILABLE
-      const ticketIds = reservation.Tickets.map((rt: any) => rt.ticketId);
+      const ticketIds = reservation.tickets.map((rt: any) => rt.ticketId);
       await tx.ticket.updateMany({
         where: { id: { in: ticketIds } },
         data: { 

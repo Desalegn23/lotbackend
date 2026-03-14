@@ -61,6 +61,18 @@ export class LotteryService {
       },
       include: {
         prizeDistribution: true,
+        agent: {
+          include: {
+            user: {
+              select: { name: true }
+            }
+          }
+        },
+        _count: {
+          select: {
+            tickets: { where: { status: 'SOLD' } }
+          }
+        }
       },
     });
   }
@@ -70,8 +82,17 @@ export class LotteryService {
       where: { id },
       include: {
         prizeDistribution: true,
+        agent: {
+          include: {
+            user: {
+              select: { name: true }
+            }
+          }
+        },
         _count: {
-          select: { tickets: true },
+          select: {
+            tickets: { where: { status: 'SOLD' } }
+          }
         },
       },
     });
