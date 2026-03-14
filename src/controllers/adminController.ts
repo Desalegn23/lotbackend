@@ -29,8 +29,7 @@ export class AdminController {
 
   static async createAgent(req: Request, res: Response) {
     try {
-
-      const { name, email, phone } = req.body;
+      const { name, email, phone, password, bankName, accountNumber } = req.body;
 
       const existingUser = await prisma.user.findUnique({
         where: { email }
@@ -40,10 +39,9 @@ export class AdminController {
         return sendError(res, 400, "Email already exists");
       }
 
-      const hashedPassword = await bcrypt.hash("password", 10);
+      const hashedPassword = await bcrypt.hash(password || "password", 10);
 
       const agent = await prisma.$transaction(async (tx) => {
-
         const user = await tx.user.create({
           data: {
             name,
@@ -56,17 +54,17 @@ export class AdminController {
 
         return tx.agent.create({
           data: {
-            userId: user.id
+            userId: user.id,
+            bankName,
+            accountNumber
           },
           include: {
             user: true
           }
         });
-
       });
 
       sendResponse(res, 201, agent, "Agent created successfully");
-
     } catch (error: any) {
       sendError(res, 400, error.message);
     }
@@ -75,17 +73,19 @@ export class AdminController {
 
   static async updateAgent(req: Request, res: Response) {
     try {
-
-      const { name, email, phone } = req.body;
+      const { name, email, phone, status, bankName, accountNumber } = req.body;
 
       const agent = await prisma.agent.update({
         where: { id: String(req.params.id) },
         data: {
+          bankName,
+          accountNumber,
           user: {
             update: {
               name,
               email,
-              phone
+              phone,
+              status
             }
           }
         },
@@ -93,7 +93,6 @@ export class AdminController {
       });
 
       sendResponse(res, 200, agent, "Agent updated successfully");
-
     } catch (error: any) {
       sendError(res, 400, error.message);
     }

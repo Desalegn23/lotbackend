@@ -71,6 +71,9 @@ model Agent {
 
   createdAt DateTime @default(now())
 
+  bankName      String?
+  accountNumber String?
+
   lotteries Lottery[]
 }
 
