@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//////////////////////
+// ENUMS
+//////////////////////
+
+enum Role {
+  ADMIN
+  AGENT
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum LotteryStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+}
+
+enum TicketStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+enum ReservationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+//////////////////////
+// USER
+//////////////////////
+
+model User {
+  id        String     @id @default(uuid())
+  name      String
+  email     String     @unique
+  phone     String?
+  password  String
+
+  role      Role       @default(USER)
+  status    UserStatus @default(ACTIVE)
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  agent        Agent?
+  reservations Reservation[]
+}
+
+//////////////////////
+// AGENT PROFILE
+//////////////////////
+
+model Agent {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  lotteries Lottery[]
+}
+
+//////////////////////
+// LOTTERY
+//////////////////////
+
+model Lottery {
+  id           String        @id @default(uuid())
+
+  agentId      String
+  agent        Agent         @relation(fields: [agentId], references: [id])
+
+  title        String
+  description  String?
+
+  ticketPrice  Float
+  totalTickets Int
+
+  status       LotteryStatus @default(DRAFT)
+
+  drawn        Boolean       @default(false)
+  drawnAt      DateTime?
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  prizeDistribution PrizeDistribution[]
+  tickets           Ticket[]
+  reservations      Reservation[]
+  winners           Winner[]
+
+  @@index([agentId])
+}
+
+//////////////////////
+// PRIZE DISTRIBUTION
+//////////////////////
+
+model PrizeDistribution {
+  id          String  @id @default(uuid())
+  lotteryId   String
+  lottery     Lottery @relation(fields: [lotteryId], references: [id])
+
+  position    Int
+  prizeAmount Float
+
+  @@unique([lotteryId, position])
+}
+
+//////////////////////
+// TICKETS
+//////////////////////
+
+model Ticket {
+  id           String       @id @default(uuid())
+
+  lotteryId    String
+  lottery      Lottery      @relation(fields: [lotteryId], references: [id])
+
+  ticketNumber Int
+  status       TicketStatus @default(AVAILABLE)
+
+  createdAt    DateTime     @default(now())
+
+  reservationTickets ReservationTicket[]
+  winners            Winner[]
+
+  @@unique([lotteryId, ticketNumber])
+  @@index([lotteryId])
+}
+
+//////////////////////
+// RESERVATION
+//////////////////////
+
+model Reservation {
+  id        String  @id @default(uuid())
+
+  lotteryId String
+  lottery   Lottery @relation(fields: [lotteryId], references: [id])
+
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id])
+
+  name      String
+  email     String
+  phone     String
+
+  reservedByAgent Boolean @default(false)
+
+  paymentConfirmed Boolean @default(false)
+
+  status ReservationStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tickets ReservationTicket[]
+
+  @@index([lotteryId])
+}
+
+//////////////////////
+// RESERVATION TICKETS
+//////////////////////
+
+model ReservationTicket {
+  id            String      @id @default(uuid())
+
+  reservationId String
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+
+  ticketId      String
+  ticket        Ticket      @relation(fields: [ticketId], references: [id])
+
+  @@unique([reservationId, ticketId])
+}
+
+//////////////////////
+// WINNERS
+//////////////////////
+
+model Winner {
+  id        String   @id @default(uuid())
+
+  lotteryId String
+  lottery   Lottery  @relation(fields: [lotteryId], references: [id])
+
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+
+  prizePosition Int
+  prizeAmount   Float
+
+  drawnAt DateTime @default(now())
+
+  @@unique([lotteryId, ticketId])
+}
