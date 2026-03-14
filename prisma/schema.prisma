@@ -138,6 +138,7 @@ model Ticket {
   status       TicketStatus @default(AVAILABLE)
 
   createdAt    DateTime     @default(now())
+  reservedBy   String?
 
   reservationTickets ReservationTicket[]
   winners            Winner[]
