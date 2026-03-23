@@ -10,6 +10,12 @@ datasource db {
 // ENUMS
 //////////////////////
 
+enum PrizeType {
+  CASH
+  PHYSICAL
+  EXPERIENCE
+}
+
 enum Role {
   ADMIN
   AGENT
@@ -114,12 +120,14 @@ model Lottery {
 //////////////////////
 
 model PrizeDistribution {
-  id          String  @id @default(uuid())
+  id          String     @id @default(uuid())
   lotteryId   String
-  lottery     Lottery @relation(fields: [lotteryId], references: [id])
+  lottery     Lottery    @relation(fields: [lotteryId], references: [id])
 
   position    Int
-  prizeAmount Float
+  prizeAmount String     // Changed from Float to String to handle both cash and physical prizes
+  prizeType   PrizeType  // Added prize type
+  description String?    // Added description for physical prizes
 
   @@unique([lotteryId, position])
 }
@@ -199,16 +207,18 @@ model ReservationTicket {
 //////////////////////
 
 model Winner {
-  id        String   @id @default(uuid())
+  id        String     @id @default(uuid())
 
   lotteryId String
-  lottery   Lottery  @relation(fields: [lotteryId], references: [id])
+  lottery   Lottery    @relation(fields: [lotteryId], references: [id])
 
   ticketId  String
-  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  ticket    Ticket     @relation(fields: [ticketId], references: [id])
 
   prizePosition Int
-  prizeAmount   Float
+  prizeAmount   String     // Changed from Float to String to handle both cash and physical prizes
+  prizeType     PrizeType  // Added prize type for winner's prize
+  description    String?    // Added description for physical prizes
 
   drawnAt DateTime @default(now())
 

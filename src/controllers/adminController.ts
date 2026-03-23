@@ -353,10 +353,17 @@ export class AdminController {
 
   static async listWinners(req: Request, res: Response) {
     try {
-
       const winners = await prisma.winner.findMany({
         include: {
-          lottery: true,
+          lottery: {
+            include: {
+              agent: {
+                include: {
+                  user: true
+                }
+              }
+            }
+          },
           ticket: true
         }
       });
@@ -369,7 +376,8 @@ export class AdminController {
         ticketNumber: w.ticket.ticketNumber,
         prizeAmount: w.prizeAmount,
         prizeDescription: `Rank ${w.prizePosition}`,
-        drawDate: w.drawnAt.toISOString()
+        drawDate: w.drawnAt.toISOString(),
+        agentName: w.lottery.agent?.user?.name || 'Unknown Agent'
       }));
 
       sendResponse(res, 200, mappedWinners);
