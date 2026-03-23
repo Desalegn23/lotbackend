@@ -8,6 +8,7 @@ export class LotteryService {
     description?: string;
     ticketPrice: number;
     totalTickets: number;
+    status?: LotteryStatus; // Made status optional with default
     prizes: { position: number; amount: number; prizeType?: string; description?: string }[];
   }) {
     // 1. Resolve agent.id from userId
@@ -28,7 +29,7 @@ export class LotteryService {
           description: data.description,
           ticketPrice: data.ticketPrice,
           totalTickets: data.totalTickets,
-          status: LotteryStatus.DRAFT,
+          status: data.status || LotteryStatus.ACTIVE, // Use provided status or default to ACTIVE
           prizeDistribution: {
             create: data.prizes.map((p) => ({
               position: p.position,

@@ -1,3 +1,4 @@
+import { LotteryStatus } from '@prisma/client';
 export declare class LotteryService {
     static createLottery(data: {
         agentId: string;
@@ -5,6 +6,7 @@ export declare class LotteryService {
         description?: string;
         ticketPrice: number;
         totalTickets: number;
+        status?: LotteryStatus;
         prizes: {
             position: number;
             amount: number;

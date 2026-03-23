@@ -18,7 +18,7 @@ export class LotteryService {
                     description: data.description,
                     ticketPrice: data.ticketPrice,
                     totalTickets: data.totalTickets,
-                    status: LotteryStatus.DRAFT,
+                    status: data.status || LotteryStatus.ACTIVE, // Use provided status or default to ACTIVE
                     prizeDistribution: {
                         create: data.prizes.map((p) => ({
                             position: p.position,
