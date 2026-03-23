@@ -34,6 +34,7 @@ router.post('/agent/reservations/:id/reject', authenticate, agentOnly, Reservati
 router.post('/agent/lotteries/:id/draw', authenticate, agentOnly, LotteryController.draw);
 router.get('/agent/lotteries', authenticate, agentOnly, LotteryController.listMyLotteries);
 router.get('/agent/reservations', authenticate, agentOnly, ReservationController.listMyReservations);
+router.get('/agent/profile', authenticate, agentOnly, AuthController.getAgentProfile);
 router.get('/agent/summary', authenticate, agentOnly, LotteryController.getMyStats);
 router.get('/agent/winners', authenticate, agentOnly, LotteryController.listMyWinners);
 

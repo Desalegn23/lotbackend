@@ -145,7 +145,83 @@ export class AuthController {
             });
             if (!user)
                 return sendError(res, 404, 'User not found');
+            // If user is an agent, include agent profile details
+            if (user.role === 'AGENT') {
+                const agentProfile = await prisma.agent.findUnique({
+                    where: { userId: user.id },
+                    select: {
+                        id: true,
+                        userId: true,
+                        user: {
+                            select: {
+                                name: true,
+                                email: true,
+                                phone: true,
+                                status: true,
+                            }
+                        },
+                        bankName: true,
+                        accountNumber: true,
+                        createdAt: true,
+                    },
+                });
+                return sendResponse(res, 200, {
+                    ...user,
+                    agent: agentProfile,
+                });
+            }
             return sendResponse(res, 200, user);
+        }
+        catch (error) {
+            return sendError(res, 500, error.message);
+        }
+    }
+    /**
+     * @openapi
+     * /api/agent/profile:
+     *   get:
+     *     summary: Get agent profile details
+     *     tags: [Agent]
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200: { description: Agent profile details }
+     *       401: { description: Unauthorized }
+     *       403: { description: Not an agent }
+     *       404: { description: Agent profile not found }
+     */
+    static async getAgentProfile(req, res) {
+        try {
+            // req.user is attached by the authenticate middleware
+            const userId = req.user?.id;
+            const user = await prisma.user.findUnique({
+                where: { id: userId },
+            });
+            if (!user || user.role !== 'AGENT') {
+                return sendError(res, 403, 'Access denied. Agent role required.');
+            }
+            const agentProfile = await prisma.agent.findUnique({
+                where: { userId: user.id },
+                select: {
+                    id: true,
+                    userId: true,
+                    user: {
+                        select: {
+                            name: true,
+                            email: true,
+                            phone: true,
+                            status: true,
+                        }
+                    },
+                    bankName: true,
+                    accountNumber: true,
+                    createdAt: true,
+                },
+            });
+            if (!agentProfile) {
+                return sendError(res, 404, 'Agent profile not found.');
+            }
+            return sendResponse(res, 200, agentProfile);
         }
         catch (error) {
             return sendError(res, 500, error.message);

@@ -59,6 +59,21 @@ export declare class AuthController {
      */
     static me(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     /**
+     * @openapi
+     * /api/agent/profile:
+     *   get:
+     *     summary: Get agent profile details
+     *     tags: [Agent]
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200: { description: Agent profile details }
+     *       401: { description: Unauthorized }
+     *       403: { description: Not an agent }
+     *       404: { description: Agent profile not found }
+     */
+    static getAgentProfile(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    /**
      * One-time admin bootstrap — creates the first ADMIN user.
      * Fails if any ADMIN already exists. Remove this route in production.
      */
