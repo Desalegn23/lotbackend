@@ -8,6 +8,8 @@ export declare class LotteryService {
         prizes: {
             position: number;
             amount: number;
+            prizeType?: string;
+            description?: string;
         }[];
     }): Promise<{
         id: string;
@@ -31,16 +33,18 @@ export declare class LotteryService {
             id: string;
             createdAt: Date;
             userId: string;
-            bankName: string | null;
             accountNumber: string | null;
+            bankName: string | null;
         };
         _count: {
             tickets: number;
         };
         prizeDistribution: {
             id: string;
+            description: string | null;
             position: number;
-            prizeAmount: number;
+            prizeAmount: string;
+            prizeType: import("@prisma/client").$Enums.PrizeType | null;
             lotteryId: string;
         }[];
     } & {
@@ -65,16 +69,18 @@ export declare class LotteryService {
             id: string;
             createdAt: Date;
             userId: string;
-            bankName: string | null;
             accountNumber: string | null;
+            bankName: string | null;
         };
         _count: {
             tickets: number;
         };
         prizeDistribution: {
             id: string;
+            description: string | null;
             position: number;
-            prizeAmount: number;
+            prizeAmount: string;
+            prizeType: import("@prisma/client").$Enums.PrizeType | null;
             lotteryId: string;
         }[];
     } & {
@@ -107,8 +113,10 @@ export declare class AgentService {
         };
         prizeDistribution: {
             id: string;
+            description: string | null;
             position: number;
-            prizeAmount: number;
+            prizeAmount: string;
+            prizeType: import("@prisma/client").$Enums.PrizeType | null;
             lotteryId: string;
         }[];
     } & {
@@ -141,8 +149,10 @@ export declare class AgentService {
         };
     } & {
         id: string;
+        description: string | null;
         drawnAt: Date;
-        prizeAmount: number;
+        prizeAmount: string;
+        prizeType: import("@prisma/client").$Enums.PrizeType | null;
         lotteryId: string;
         ticketId: string;
         prizePosition: number;

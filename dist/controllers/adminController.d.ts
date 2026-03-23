@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 export declare class AdminController {
+    private static mapAgentResponse;
     static listAgents(req: Request, res: Response): Promise<void>;
+    static getAgentById(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static createAgent(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static updateAgent(req: Request, res: Response): Promise<void>;
     static deactivateAgent(req: Request, res: Response): Promise<void>;

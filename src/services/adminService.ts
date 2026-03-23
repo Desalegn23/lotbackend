@@ -22,12 +22,8 @@ export class AdminService {
           winners: true
         }
       }),
-      prisma.winner.aggregate({
-        _sum: {
-          prizeAmount: true
-        },
-        _count: true,
-        _max: {
+      prisma.winner.findMany({
+        select: {
           prizeAmount: true
         }
       }),
@@ -43,9 +39,25 @@ export class AdminService {
 
     // Calculate Global Revenue
     let totalRevenue = 0;
+    let totalPayouts = 0;
+    let biggestWin = 0;
+    
+    // Calculate payouts from all winners
+    winnerStats.forEach(w => {
+      const amount = parseFloat(w.prizeAmount.replace(/[^0-9.]/g, '')) || 0;
+      totalPayouts += amount;
+      if (amount > biggestWin) {
+        biggestWin = amount;
+      }
+    });
+    
     allLotteries.forEach(l => {
       const lotteryRevenue = (l.ticketPrice * l.totalTickets);
-      const prizeSum = l.winners.reduce((sum, w) => sum + w.prizeAmount, 0);
+      // Since prizeAmount is now a string, we need to extract numeric values for calculations
+      const prizeSum = l.winners.reduce((sum, w) => {
+        const amount = parseFloat(w.prizeAmount.replace(/[^0-9.]/g, '')) || 0;
+        return sum + amount;
+      }, 0);
       totalRevenue += (lotteryRevenue - prizeSum);
     });
 
@@ -56,9 +68,8 @@ export class AdminService {
       totalUsers: userCount,
       totalAgents: agentCount,
       totalRevenue,
-      totalPayouts: winnerStats._sum.prizeAmount || 0,
-      totalWinners: winnerStats._count || 0,
-      biggestWin: winnerStats._max.prizeAmount || 0,
+      totalPayouts: totalPayouts,
+      biggestWin: biggestWin,
       salesToday: salesToday,
       systemStatus: {
         api: 'Online',

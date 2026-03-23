@@ -10,8 +10,10 @@ export declare class DrawService {
         };
     } & {
         id: string;
+        description: string | null;
         drawnAt: Date;
-        prizeAmount: number;
+        prizeAmount: string;
+        prizeType: import("@prisma/client").$Enums.PrizeType | null;
         lotteryId: string;
         ticketId: string;
         prizePosition: number;
@@ -27,8 +29,10 @@ export declare class DrawService {
         };
     } & {
         id: string;
+        description: string | null;
         drawnAt: Date;
-        prizeAmount: number;
+        prizeAmount: string;
+        prizeType: import("@prisma/client").$Enums.PrizeType | null;
         lotteryId: string;
         ticketId: string;
         prizePosition: number;

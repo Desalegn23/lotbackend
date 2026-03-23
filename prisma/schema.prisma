@@ -6,9 +6,121 @@ datasource db {
   provider = "postgresql"
 }
 
-//////////////////////
-// ENUMS
-//////////////////////
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  phone        String?
+  password     String
+  role         Role          @default(USER)
+  status       UserStatus    @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  agent        Agent?
+  reservations Reservation[]
+}
+
+model Agent {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  createdAt     DateTime  @default(now())
+  accountNumber String?
+  bankName      String?
+  user          User      @relation(fields: [userId], references: [id])
+  lotteries     Lottery[]
+}
+
+model Lottery {
+  id                String              @id @default(uuid())
+  agentId           String
+  title             String
+  description       String?
+  ticketPrice       Float
+  totalTickets      Int
+  status            LotteryStatus       @default(ACTIVE)
+  drawn             Boolean             @default(false)
+  drawnAt           DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  agent             Agent               @relation(fields: [agentId], references: [id])
+  prizeDistribution PrizeDistribution[]
+  reservations      Reservation[]
+  tickets           Ticket[]
+  winners           Winner[]
+
+  @@index([agentId])
+}
+
+model PrizeDistribution {
+  id          String     @id @default(uuid())
+  lotteryId   String
+  position    Int
+  prizeAmount String
+  description String?
+  prizeType   PrizeType?
+  lottery     Lottery    @relation(fields: [lotteryId], references: [id])
+
+  @@unique([lotteryId, position])
+}
+
+model Ticket {
+  id                 String              @id @default(uuid())
+  lotteryId          String
+  ticketNumber       Int
+  status             TicketStatus        @default(AVAILABLE)
+  createdAt          DateTime            @default(now())
+  reservedBy         String?
+  reservationTickets ReservationTicket[]
+  lottery            Lottery             @relation(fields: [lotteryId], references: [id])
+  winners            Winner[]
+
+  @@unique([lotteryId, ticketNumber])
+  @@index([lotteryId])
+}
+
+model Reservation {
+  id               String              @id @default(uuid())
+  lotteryId        String
+  userId           String?
+  name             String
+  email            String
+  phone            String
+  reservedByAgent  Boolean             @default(false)
+  paymentConfirmed Boolean             @default(false)
+  status           ReservationStatus   @default(PENDING)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  lottery          Lottery             @relation(fields: [lotteryId], references: [id])
+  user             User?               @relation(fields: [userId], references: [id])
+  tickets          ReservationTicket[]
+
+  @@index([lotteryId])
+}
+
+model ReservationTicket {
+  id            String      @id @default(uuid())
+  reservationId String
+  ticketId      String
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  ticket        Ticket      @relation(fields: [ticketId], references: [id])
+
+  @@unique([reservationId, ticketId])
+}
+
+model Winner {
+  id            String     @id @default(uuid())
+  lotteryId     String
+  ticketId      String
+  prizePosition Int
+  prizeAmount   String
+  drawnAt       DateTime   @default(now())
+  description   String?
+  prizeType     PrizeType?
+  lottery       Lottery    @relation(fields: [lotteryId], references: [id])
+  ticket        Ticket     @relation(fields: [ticketId], references: [id])
+
+  @@unique([lotteryId, ticketId])
+}
 
 enum PrizeType {
   CASH
@@ -43,184 +155,4 @@ enum ReservationStatus {
   PENDING
   APPROVED
   REJECTED
-}
-
-//////////////////////
-// USER
-//////////////////////
-
-model User {
-  id        String     @id @default(uuid())
-  name      String
-  email     String     @unique
-  phone     String?
-  password  String
-
-  role      Role       @default(USER)
-  status    UserStatus @default(ACTIVE)
-
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  agent        Agent?
-  reservations Reservation[]
-}
-
-//////////////////////
-// AGENT PROFILE
-//////////////////////
-
-model Agent {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  bankName      String?
-  accountNumber String?
-
-  lotteries Lottery[]
-}
-
-//////////////////////
-// LOTTERY
-//////////////////////
-
-model Lottery {
-  id           String        @id @default(uuid())
-
-  agentId      String
-  agent        Agent         @relation(fields: [agentId], references: [id])
-
-  title        String
-  description  String?
-
-  ticketPrice  Float
-  totalTickets Int
-
-  status       LotteryStatus @default(ACTIVE)
-
-  drawn        Boolean       @default(false)
-  drawnAt      DateTime?
-
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-
-  prizeDistribution PrizeDistribution[]
-  tickets           Ticket[]
-  reservations      Reservation[]
-  winners           Winner[]
-
-  @@index([agentId])
-}
-
-//////////////////////
-// PRIZE DISTRIBUTION
-//////////////////////
-
-model PrizeDistribution {
-  id          String     @id @default(uuid())
-  lotteryId   String
-  lottery     Lottery    @relation(fields: [lotteryId], references: [id])
-
-  position    Int
-  prizeAmount String     // Changed from Float to String to handle both cash and physical prizes
-  prizeType   PrizeType  // Added prize type
-  description String?    // Added description for physical prizes
-
-  @@unique([lotteryId, position])
-}
-
-//////////////////////
-// TICKETS
-//////////////////////
-
-model Ticket {
-  id           String       @id @default(uuid())
-
-  lotteryId    String
-  lottery      Lottery      @relation(fields: [lotteryId], references: [id])
-
-  ticketNumber Int
-  status       TicketStatus @default(AVAILABLE)
-
-  createdAt    DateTime     @default(now())
-  reservedBy   String?
-
-  reservationTickets ReservationTicket[]
-  winners            Winner[]
-
-  @@unique([lotteryId, ticketNumber])
-  @@index([lotteryId])
-}
-
-//////////////////////
-// RESERVATION
-//////////////////////
-
-model Reservation {
-  id        String  @id @default(uuid())
-
-  lotteryId String
-  lottery   Lottery @relation(fields: [lotteryId], references: [id])
-
-  userId    String?
-  user      User?   @relation(fields: [userId], references: [id])
-
-  name      String
-  email     String
-  phone     String
-
-  reservedByAgent Boolean @default(false)
-
-  paymentConfirmed Boolean @default(false)
-
-  status ReservationStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  tickets ReservationTicket[]
-
-  @@index([lotteryId])
-}
-
-//////////////////////
-// RESERVATION TICKETS
-//////////////////////
-
-model ReservationTicket {
-  id            String      @id @default(uuid())
-
-  reservationId String
-  reservation   Reservation @relation(fields: [reservationId], references: [id])
-
-  ticketId      String
-  ticket        Ticket      @relation(fields: [ticketId], references: [id])
-
-  @@unique([reservationId, ticketId])
-}
-
-//////////////////////
-// WINNERS
-//////////////////////
-
-model Winner {
-  id        String     @id @default(uuid())
-
-  lotteryId String
-  lottery   Lottery    @relation(fields: [lotteryId], references: [id])
-
-  ticketId  String
-  ticket    Ticket     @relation(fields: [ticketId], references: [id])
-
-  prizePosition Int
-  prizeAmount   String     // Changed from Float to String to handle both cash and physical prizes
-  prizeType     PrizeType  // Added prize type for winner's prize
-  description    String?    // Added description for physical prizes
-
-  drawnAt DateTime @default(now())
-
-  @@unique([lotteryId, ticketId])
 }

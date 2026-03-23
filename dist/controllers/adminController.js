@@ -3,18 +3,86 @@ import { sendResponse, sendError } from "../utils/response.js";
 import bcrypt from "bcrypt";
 import { AdminService } from "../services/adminService.js";
 export class AdminController {
-    //////////////////////////////
-    // AGENTS
-    //////////////////////////////
+    static mapAgentResponse(a) {
+        let revenue = 0;
+        if (a.lotteries) {
+            a.lotteries.forEach((l) => {
+                const prizeTotal = l.winners ? l.winners.reduce((s, w) => s + (w.prizeAmount || 0), 0) : 0;
+                revenue += (l.ticketPrice * l.totalTickets) - prizeTotal;
+            });
+        }
+        return {
+            id: a.id,
+            name: a.user.name,
+            email: a.user.email,
+            phone: a.user.phone || '',
+            status: a.user.status,
+            bankName: a.bankName || '',
+            accountNumber: a.accountNumber || '',
+            totalLotteries: a.lotteries ? a.lotteries.length : 0,
+            revenueGenerated: revenue,
+            createdAt: a.user.createdAt || a.createdAt
+        };
+    }
     static async listAgents(req, res) {
         try {
             const agents = await prisma.agent.findMany({
                 include: {
                     user: true,
-                    lotteries: true
+                    lotteries: {
+                        include: {
+                            winners: true
+                        }
+                    }
                 }
             });
-            sendResponse(res, 200, agents);
+            const mappedAgents = agents.map(a => AdminController.mapAgentResponse(a));
+            sendResponse(res, 200, mappedAgents);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
+    static async getAgentById(req, res) {
+        try {
+            const { id } = req.params;
+            const agent = await prisma.agent.findUnique({
+                where: { id: String(id) },
+                include: {
+                    user: true,
+                    lotteries: {
+                        include: {
+                            winners: true,
+                            prizeDistribution: true,
+                            _count: {
+                                select: { tickets: { where: { status: 'SOLD' } } }
+                            }
+                        }
+                    }
+                }
+            });
+            if (!agent)
+                return sendError(res, 404, "Agent not found");
+            const baseMapped = AdminController.mapAgentResponse(agent);
+            const mappedAgent = {
+                ...baseMapped,
+                lotteries: agent.lotteries.map((l) => ({
+                    id: l.id,
+                    title: l.title,
+                    description: l.description,
+                    ticketPrice: l.ticketPrice,
+                    totalTickets: l.totalTickets,
+                    soldTickets: l._count.tickets,
+                    status: l.status,
+                    createdAt: l.createdAt,
+                    prizes: l.prizeDistribution.map((p) => ({
+                        rank: p.position,
+                        amount: p.prizeAmount,
+                        description: `Rank ${p.position}`
+                    }))
+                }))
+            };
+            sendResponse(res, 200, mappedAgent);
         }
         catch (error) {
             sendError(res, 500, error.message);
@@ -35,7 +103,7 @@ export class AdminController {
                     data: {
                         name,
                         email,
-                        phone,
+                        phone: String(phone || ''),
                         role: "AGENT",
                         password: hashedPassword
                     }
@@ -43,15 +111,16 @@ export class AdminController {
                 return tx.agent.create({
                     data: {
                         userId: user.id,
-                        bankName,
-                        accountNumber
+                        bankName: String(bankName || ''),
+                        accountNumber: String(accountNumber || '')
                     },
                     include: {
                         user: true
                     }
                 });
             });
-            sendResponse(res, 201, agent, "Agent created successfully");
+            const mappedAgent = AdminController.mapAgentResponse(agent);
+            sendResponse(res, 201, mappedAgent, "Agent created successfully");
         }
         catch (error) {
             sendError(res, 400, error.message);
@@ -63,20 +132,21 @@ export class AdminController {
             const agent = await prisma.agent.update({
                 where: { id: String(req.params.id) },
                 data: {
-                    bankName,
-                    accountNumber,
+                    bankName: String(bankName || ''),
+                    accountNumber: String(accountNumber || ''),
                     user: {
                         update: {
                             name,
                             email,
-                            phone,
+                            phone: String(phone || ''),
                             status
                         }
                     }
                 },
                 include: { user: true }
             });
-            sendResponse(res, 200, agent, "Agent updated successfully");
+            const mappedAgent = AdminController.mapAgentResponse(agent);
+            sendResponse(res, 200, mappedAgent, "Agent updated successfully");
         }
         catch (error) {
             sendError(res, 400, error.message);
@@ -95,7 +165,8 @@ export class AdminController {
                 },
                 include: { user: true }
             });
-            sendResponse(res, 200, agent, "Agent deactivated successfully");
+            const mappedAgent = AdminController.mapAgentResponse(agent);
+            sendResponse(res, 200, mappedAgent, "Agent deactivated successfully");
         }
         catch (error) {
             sendError(res, 400, error.message);
@@ -114,7 +185,8 @@ export class AdminController {
                 },
                 include: { user: true }
             });
-            sendResponse(res, 200, agent, "Agent activated successfully");
+            const mappedAgent = AdminController.mapAgentResponse(agent);
+            sendResponse(res, 200, mappedAgent, "Agent activated successfully");
         }
         catch (error) {
             sendError(res, 400, error.message);
@@ -134,7 +206,8 @@ export class AdminController {
                 },
                 include: { user: true }
             });
-            sendResponse(res, 200, agent, "Agent password reset successfully");
+            const mappedAgent = AdminController.mapAgentResponse(agent);
+            sendResponse(res, 200, mappedAgent, "Agent password reset successfully");
         }
         catch (error) {
             sendError(res, 400, error.message);
@@ -173,10 +246,18 @@ export class AdminController {
                             user: true
                         }
                     },
-                    prizeDistribution: true
+                    prizeDistribution: true,
+                    _count: {
+                        select: { tickets: { where: { status: 'SOLD' } } }
+                    }
                 }
             });
-            sendResponse(res, 200, lotteries);
+            const mappedLotteries = lotteries.map((l) => ({
+                ...l,
+                soldTickets: l._count.tickets,
+                prizes: l.prizeDistribution
+            }));
+            sendResponse(res, 200, mappedLotteries);
         }
         catch (error) {
             sendError(res, 500, error.message);
@@ -210,11 +291,30 @@ export class AdminController {
         try {
             const winners = await prisma.winner.findMany({
                 include: {
-                    lottery: true,
+                    lottery: {
+                        include: {
+                            agent: {
+                                include: {
+                                    user: true
+                                }
+                            }
+                        }
+                    },
                     ticket: true
                 }
             });
-            sendResponse(res, 200, winners);
+            const mappedWinners = winners.map((w) => ({
+                id: w.id,
+                lotteryId: w.lotteryId,
+                lotteryTitle: w.lottery.title,
+                winnerName: 'Winner', // Fallback
+                ticketNumber: w.ticket.ticketNumber,
+                prizeAmount: w.prizeAmount,
+                prizeDescription: `Rank ${w.prizePosition}`,
+                drawDate: w.drawnAt.toISOString(),
+                agentName: w.lottery.agent?.user?.name || 'Unknown Agent'
+            }));
+            sendResponse(res, 200, mappedWinners);
         }
         catch (error) {
             sendError(res, 500, error.message);

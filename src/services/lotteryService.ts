@@ -1,5 +1,5 @@
 import prisma from '../db/prisma.js';
-import { LotteryStatus, TicketStatus } from '@prisma/client';
+import { LotteryStatus, TicketStatus, PrizeType } from '@prisma/client';
 
 export class LotteryService {
   static async createLottery(data: {
@@ -8,7 +8,7 @@ export class LotteryService {
     description?: string;
     ticketPrice: number;
     totalTickets: number;
-    prizes: { position: number; amount: number }[];
+    prizes: { position: number; amount: number; prizeType?: string; description?: string }[];
   }) {
     // 1. Resolve agent.id from userId
     const agent = await prisma.agent.findUnique({
@@ -32,7 +32,9 @@ export class LotteryService {
           prizeDistribution: {
             create: data.prizes.map((p) => ({
               position: p.position,
-              prizeAmount: p.amount,
+              prizeAmount: p.amount.toString(), // Convert to string
+              prizeType: (p.prizeType as PrizeType) || PrizeType.PHYSICAL,
+              description: p.description || `${p.position === 1 ? 'Grand' : p.position === 2 ? 'Second' : 'Consolation'} Prize`
             })),
           },
         },
