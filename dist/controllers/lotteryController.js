@@ -149,5 +149,51 @@ export class LotteryController {
             sendError(res, 500, error.message);
         }
     }
+    static async getMyLotteryTickets(req, res) {
+        try {
+            const userId = req.user.id;
+            const { id } = req.params;
+            // @ts-ignore
+            const { AgentService } = await import('../services/lotteryService.js');
+            const tickets = await AgentService.getAgentLotteryTickets(userId, String(id));
+            const mappedTickets = tickets.map((t) => ({
+                id: t.id,
+                ticketNumber: t.ticketNumber,
+                status: t.status,
+                reservedBy: t.reservedBy,
+                holderInfo: t.reservationTickets[0]?.reservation ? {
+                    name: t.reservationTickets[0].reservation.name,
+                    email: t.reservationTickets[0].reservation.email,
+                    phone: t.reservationTickets[0].reservation.phone,
+                    status: t.reservationTickets[0].reservation.status
+                } : null
+            }));
+            sendResponse(res, 200, mappedTickets);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
+    static async getMyLotteryWinners(req, res) {
+        try {
+            const userId = req.user.id;
+            const { id } = req.params;
+            // @ts-ignore
+            const { AgentService } = await import('../services/lotteryService.js');
+            const winners = await AgentService.getAgentLotteryWinners(userId, String(id));
+            const mappedWinners = winners.map((w) => ({
+                id: w.id,
+                prizePosition: w.prizePosition,
+                prizeAmount: w.prizeAmount,
+                ticketNumber: w.ticket.ticketNumber,
+                drawnAt: w.drawnAt,
+                description: w.description
+            }));
+            sendResponse(res, 200, mappedWinners);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
 }
 //# sourceMappingURL=lotteryController.js.map

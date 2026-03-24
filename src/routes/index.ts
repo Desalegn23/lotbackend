@@ -37,6 +37,8 @@ router.get('/agent/reservations', authenticate, agentOnly, ReservationController
 router.get('/agent/profile', authenticate, agentOnly, AuthController.getAgentProfile);
 router.get('/agent/summary', authenticate, agentOnly, LotteryController.getMyStats);
 router.get('/agent/winners', authenticate, agentOnly, LotteryController.listMyWinners);
+router.get('/agent/lotteries/:id/tickets', authenticate, agentOnly, LotteryController.getMyLotteryTickets);
+router.get('/agent/lotteries/:id/winners', authenticate, agentOnly, LotteryController.getMyLotteryWinners);
 
 // ─────────────────────────────────────────────
 // ADMIN ROUTES (JWT required, role: ADMIN only)
@@ -52,6 +54,8 @@ router.delete('/admin/agents/:id', authenticate, adminOnly, AdminController.dele
 
 router.get('/admin/lotteries', authenticate, adminOnly, AdminController.listLotteries);
 router.get('/admin/lotteries/:id', authenticate, adminOnly, AdminController.getLotteryById);
+router.get('/admin/lotteries/:id/tickets', authenticate, adminOnly, AdminController.getLotteryTickets);
+router.get('/admin/lotteries/:id/winners', authenticate, adminOnly, AdminController.getLotteryWinners);
 router.get('/admin/tickets', authenticate, adminOnly, AdminController.listTickets);
 router.get('/admin/winners', authenticate, adminOnly, AdminController.listWinners);
 router.get('/admin/summary', authenticate, adminOnly, AdminController.monitorSystem);

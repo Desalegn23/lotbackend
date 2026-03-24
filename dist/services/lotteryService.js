@@ -177,5 +177,59 @@ export class AgentService {
         });
         return winners;
     }
+    static async getAgentLotteryWinners(userId, lotteryId) {
+        const agent = await prisma.agent.findUnique({
+            where: { userId: userId },
+        });
+        if (!agent)
+            throw new Error('Agent profile not found');
+        const lottery = await prisma.lottery.findFirst({
+            where: { id: lotteryId, agentId: agent.id }
+        });
+        if (!lottery)
+            throw new Error('Lottery not found or access denied');
+        return await prisma.winner.findMany({
+            where: { lotteryId: lotteryId },
+            include: {
+                ticket: {
+                    select: {
+                        ticketNumber: true,
+                        status: true,
+                        reservedBy: true,
+                    }
+                }
+            },
+            orderBy: { prizePosition: 'asc' },
+        });
+    }
+    static async getAgentLotteryTickets(userId, lotteryId) {
+        const agent = await prisma.agent.findUnique({
+            where: { userId: userId },
+        });
+        if (!agent)
+            throw new Error('Agent profile not found');
+        const lottery = await prisma.lottery.findFirst({
+            where: { id: lotteryId, agentId: agent.id }
+        });
+        if (!lottery)
+            throw new Error('Lottery not found or access denied');
+        return await prisma.ticket.findMany({
+            where: { lotteryId: lotteryId },
+            orderBy: { ticketNumber: 'asc' },
+            include: {
+                reservationTickets: {
+                    include: {
+                        reservation: true
+                    },
+                    where: {
+                        reservation: {
+                            status: { in: ['PENDING', 'APPROVED'] }
+                        }
+                    },
+                    take: 1
+                }
+            }
+        });
+    }
 }
 //# sourceMappingURL=lotteryService.js.map

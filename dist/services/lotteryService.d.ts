@@ -159,5 +159,49 @@ export declare class AgentService {
         ticketId: string;
         prizePosition: number;
     })[]>;
+    static getAgentLotteryWinners(userId: string, lotteryId: string): Promise<({
+        ticket: {
+            status: import("@prisma/client").$Enums.TicketStatus;
+            ticketNumber: number;
+            reservedBy: string | null;
+        };
+    } & {
+        id: string;
+        description: string | null;
+        drawnAt: Date;
+        prizeAmount: string;
+        prizeType: import("@prisma/client").$Enums.PrizeType | null;
+        lotteryId: string;
+        ticketId: string;
+        prizePosition: number;
+    })[]>;
+    static getAgentLotteryTickets(userId: string, lotteryId: string): Promise<({
+        reservationTickets: ({
+            reservation: {
+                name: string;
+                email: string;
+                phone: string;
+                id: string;
+                status: import("@prisma/client").$Enums.ReservationStatus;
+                createdAt: Date;
+                updatedAt: Date;
+                userId: string | null;
+                lotteryId: string;
+                reservedByAgent: boolean;
+                paymentConfirmed: boolean;
+            };
+        } & {
+            id: string;
+            ticketId: string;
+            reservationId: string;
+        })[];
+    } & {
+        id: string;
+        status: import("@prisma/client").$Enums.TicketStatus;
+        createdAt: Date;
+        lotteryId: string;
+        ticketNumber: number;
+        reservedBy: string | null;
+    })[]>;
 }
 //# sourceMappingURL=lotteryService.d.ts.map

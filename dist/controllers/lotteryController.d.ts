@@ -67,5 +67,7 @@ export declare class LotteryController {
     static listMyLotteries(req: Request, res: Response): Promise<void>;
     static getMyStats(req: Request, res: Response): Promise<void>;
     static listMyWinners(req: Request, res: Response): Promise<void>;
+    static getMyLotteryTickets(req: Request, res: Response): Promise<void>;
+    static getMyLotteryWinners(req: Request, res: Response): Promise<void>;
 }
 //# sourceMappingURL=lotteryController.d.ts.map

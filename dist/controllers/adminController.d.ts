@@ -11,6 +11,8 @@ export declare class AdminController {
     static deleteAgent(req: Request, res: Response): Promise<void>;
     static listLotteries(req: Request, res: Response): Promise<void>;
     static getLotteryById(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static getLotteryTickets(req: Request, res: Response): Promise<void>;
+    static getLotteryWinners(req: Request, res: Response): Promise<void>;
     static listTickets(req: Request, res: Response): Promise<void>;
     static listWinners(req: Request, res: Response): Promise<void>;
     static monitorSystem(req: Request, res: Response): Promise<void>;

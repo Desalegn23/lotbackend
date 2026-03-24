@@ -297,6 +297,67 @@ export class AdminController {
             sendError(res, 500, error.message);
         }
     }
+    static async getLotteryTickets(req, res) {
+        try {
+            const { id } = req.params;
+            const tickets = await prisma.ticket.findMany({
+                where: { lotteryId: String(id) },
+                orderBy: { ticketNumber: 'asc' },
+                include: {
+                    reservationTickets: {
+                        include: {
+                            reservation: true
+                        },
+                        where: {
+                            reservation: {
+                                status: { in: ['PENDING', 'APPROVED'] }
+                            }
+                        },
+                        take: 1
+                    }
+                }
+            });
+            const mappedTickets = tickets.map((t) => ({
+                id: t.id,
+                ticketNumber: t.ticketNumber,
+                status: t.status,
+                reservedBy: t.reservedBy,
+                holderInfo: t.reservationTickets[0]?.reservation ? {
+                    name: t.reservationTickets[0].reservation.name,
+                    email: t.reservationTickets[0].reservation.email,
+                    phone: t.reservationTickets[0].reservation.phone,
+                    status: t.reservationTickets[0].reservation.status
+                } : null
+            }));
+            sendResponse(res, 200, mappedTickets);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
+    static async getLotteryWinners(req, res) {
+        try {
+            const { id } = req.params;
+            const winners = await prisma.winner.findMany({
+                where: { lotteryId: String(id) },
+                include: {
+                    ticket: true
+                }
+            });
+            const mappedWinners = winners.map((w) => ({
+                id: w.id,
+                prizePosition: w.prizePosition,
+                prizeAmount: w.prizeAmount,
+                ticketNumber: w.ticket.ticketNumber,
+                drawnAt: w.drawnAt,
+                description: w.description
+            }));
+            sendResponse(res, 200, mappedWinners);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
     //////////////////////////////
     // TICKETS
     //////////////////////////////
