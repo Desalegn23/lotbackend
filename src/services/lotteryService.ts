@@ -5,9 +5,10 @@ export class LotteryService {
   static async createLottery(data: {
     agentId: string; // This is the userId from the auth middleware
     title: string;
-    description?: string;
+    description: string;
     ticketPrice: number;
     totalTickets: number;
+    category: string;
     status?: LotteryStatus; // Made status optional with default
     prizes: { position: number; amount: number; prizeType?: string; description?: string }[];
   }) {
@@ -29,6 +30,7 @@ export class LotteryService {
           description: data.description,
           ticketPrice: data.ticketPrice,
           totalTickets: data.totalTickets,
+          category: data.category,
           status: data.status || LotteryStatus.ACTIVE, // Use provided status or default to ACTIVE
           prizeDistribution: {
             create: data.prizes.map((p) => ({

@@ -3,9 +3,10 @@ export declare class LotteryService {
     static createLottery(data: {
         agentId: string;
         title: string;
-        description?: string;
+        description: string;
         ticketPrice: number;
         totalTickets: number;
+        category: string;
         status?: LotteryStatus;
         prizes: {
             position: number;
@@ -22,6 +23,8 @@ export declare class LotteryService {
         description: string | null;
         ticketPrice: number;
         totalTickets: number;
+        category: string;
+        image: string | null;
         drawn: boolean;
         drawnAt: Date | null;
         agentId: string;
@@ -58,6 +61,8 @@ export declare class LotteryService {
         description: string | null;
         ticketPrice: number;
         totalTickets: number;
+        category: string;
+        image: string | null;
         drawn: boolean;
         drawnAt: Date | null;
         agentId: string;
@@ -94,6 +99,8 @@ export declare class LotteryService {
         description: string | null;
         ticketPrice: number;
         totalTickets: number;
+        category: string;
+        image: string | null;
         drawn: boolean;
         drawnAt: Date | null;
         agentId: string;
@@ -130,6 +137,8 @@ export declare class AgentService {
         description: string | null;
         ticketPrice: number;
         totalTickets: number;
+        category: string;
+        image: string | null;
         drawn: boolean;
         drawnAt: Date | null;
         agentId: string;

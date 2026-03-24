@@ -38,6 +38,8 @@ model Lottery {
   ticketPrice       Float
   totalTickets      Int
   status            LotteryStatus       @default(ACTIVE)
+  category          String            @default("OTHER")
+  image             String?
   drawn             Boolean             @default(false)
   drawnAt           DateTime?
   createdAt         DateTime            @default(now())
