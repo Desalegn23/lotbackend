@@ -113,7 +113,6 @@ export class LotteryService {
 
 export class AgentService {
   static async getAgentLotteries(agentId: string) {
-    // Find the agent by userId first to get their agent.id
     const agent = await prisma.agent.findUnique({
       where: { userId: agentId },
     });
@@ -127,7 +126,9 @@ export class AgentService {
       include: {
         prizeDistribution: true,
         _count: {
-          select: { tickets: true, winners: true },
+          select: {
+            tickets: { where: { status: 'SOLD' } },
+          },
         },
       },
       orderBy: { createdAt: 'desc' },
