@@ -51,6 +51,7 @@ router.post('/admin/agents/:id/reset-password', authenticate, adminOnly, AdminCo
 router.delete('/admin/agents/:id', authenticate, adminOnly, AdminController.deleteAgent);
 
 router.get('/admin/lotteries', authenticate, adminOnly, AdminController.listLotteries);
+router.get('/admin/lotteries/:id', authenticate, adminOnly, AdminController.getLotteryById);
 router.get('/admin/tickets', authenticate, adminOnly, AdminController.listTickets);
 router.get('/admin/winners', authenticate, adminOnly, AdminController.listWinners);
 router.get('/admin/summary', authenticate, adminOnly, AdminController.monitorSystem);

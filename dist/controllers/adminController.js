@@ -263,6 +263,40 @@ export class AdminController {
             sendError(res, 500, error.message);
         }
     }
+    static async getLotteryById(req, res) {
+        try {
+            const { id } = req.params;
+            const lottery = await prisma.lottery.findUnique({
+                where: { id: String(id) },
+                include: {
+                    agent: {
+                        include: {
+                            user: true
+                        }
+                    },
+                    prizeDistribution: true,
+                    _count: {
+                        select: { tickets: { where: { status: 'SOLD' } } }
+                    }
+                }
+            });
+            if (!lottery)
+                return sendError(res, 404, "Lottery not found");
+            const mappedLottery = {
+                ...lottery,
+                soldTickets: lottery._count.tickets,
+                prizes: lottery.prizeDistribution.map((p) => ({
+                    rank: p.position,
+                    amount: p.prizeAmount,
+                    description: p.description
+                }))
+            };
+            sendResponse(res, 200, mappedLottery);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
     //////////////////////////////
     // TICKETS
     //////////////////////////////
