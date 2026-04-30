@@ -5,7 +5,11 @@ import { sendResponse, sendError } from '../utils/response.js';
 export class ReservationController {
   static async reserve(req: Request, res: Response) {
     try {
-      const reservation = await ReservationService.createPublicReservation(req.body);
+      const userId = (req as any).user?.id;
+      const reservation = await ReservationService.createPublicReservation({
+        ...req.body,
+        userId
+      });
       sendResponse(res, 201, reservation, 'Reservation created successfully');
     } catch (error: any) {
       sendError(res, 400, error.message);
@@ -48,6 +52,15 @@ export class ReservationController {
     try {
       const userId = (req as any).user.id;
       const reservations = await ReservationService.getAgentReservations(userId);
+      sendResponse(res, 200, reservations);
+    } catch (error: any) {
+      sendError(res, 500, error.message);
+    }
+  }
+  static async listUserTickets(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+      const reservations = await ReservationService.getUserReservations(userId);
       sendResponse(res, 200, reservations);
     } catch (error: any) {
       sendError(res, 500, error.message);

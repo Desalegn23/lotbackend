@@ -3,7 +3,7 @@ import { AuthController } from '../controllers/authController.js';
 import { LotteryController } from '../controllers/lotteryController.js';
 import { ReservationController } from '../controllers/reservationController.js';
 import { AdminController } from '../controllers/adminController.js';
-import { authenticate, agentOnly, adminOnly } from '../middleware/auth.js';
+import { authenticate, authenticateOptional, agentOnly, adminOnly } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -24,7 +24,8 @@ router.get('/lotteries', LotteryController.list);
 router.get('/lotteries/:id', LotteryController.getById);
 router.get('/lotteries/:id/tickets', LotteryController.getTickets);
 router.get('/winners', LotteryController.listWinners);
-router.post('/reservations', ReservationController.reserve);
+router.post('/reservations', authenticateOptional, ReservationController.reserve);
+router.get('/user/reservations', authenticate, ReservationController.listUserTickets);
 
 // ─────────────────────────────────────────────
 // AGENT ROUTES (JWT required, role: AGENT or ADMIN)

@@ -8,6 +8,7 @@ export class ReservationService {
     email: string;
     phone: string;
     ticketIds: string[];
+    userId?: string;
   }) {
     return await prisma.$transaction(async (tx: any) => {
       // 1. Verify tickets are available
@@ -27,6 +28,7 @@ export class ReservationService {
       const reservation = await tx.reservation.create({
         data: {
           lotteryId: data.lotteryId,
+          userId: data.userId,
           name: data.name,
           email: data.email,
           phone: data.phone,
@@ -184,6 +186,23 @@ export class ReservationService {
       where: {
         lottery: { agentId: agent.id },
       },
+      include: {
+        lottery: {
+          select: { title: true }
+        },
+        tickets: {
+          include: {
+            ticket: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  static async getUserReservations(userId: string) {
+    return await prisma.reservation.findMany({
+      where: { userId: userId },
       include: {
         lottery: {
           select: { title: true }
