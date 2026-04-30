@@ -156,6 +156,7 @@ export class AuthController {
           name: true,
           email: true,
           phone: true,
+          telegramId: true,
           role: true,
           status: true,
           createdAt: true,
@@ -306,27 +307,7 @@ export class AuthController {
       });
 
       if (!user) {
-        // Automatically create a new user account if not found
-        // Generates a random password since they login via Telegram
-        const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-10), 10);
-        
-        // Use a generated email since telegram might not provide one
-        const generatedEmail = `tg_${telegramId}@telegram.local`;
-        
-        const firstName = tgUser.first_name || '';
-        const lastName = tgUser.last_name || '';
-        const name = `${firstName} ${lastName}`.trim() || tgUser.username || `User ${telegramId}`;
-
-        user = await prisma.user.create({
-          data: {
-            telegramId,
-            name,
-            email: generatedEmail,
-            password: hashedPassword,
-            role: 'USER',
-          },
-          include: { agent: true },
-        });
+        return sendError(res, 404, 'No account linked to this Telegram profile. Please sign up or login with email first to link your account.');
       }
 
       if (user.status === 'INACTIVE') {
@@ -345,6 +326,72 @@ export class AuthController {
           agentId: user?.agent?.id ?? null,
         },
       }, 'Telegram login successful');
+    } catch (error: any) {
+      return sendError(res, 500, error.message);
+    }
+  }
+
+  /**
+   * @openapi
+   * /api/auth/telegram/link:
+   *   post:
+   *     summary: Link Telegram to an authenticated user
+   *     tags: [Auth]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [initData]
+   *             properties:
+   *               initData: { type: string }
+   *     responses:
+   *       200: { description: Telegram linked successfully }
+   *       400: { description: Invalid initData or already linked }
+   *       401: { description: Unauthorized }
+   */
+  static async linkTelegram(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+      const { initData } = req.body;
+      if (!initData) {
+        return sendError(res, 400, 'initData is required');
+      }
+
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      if (!botToken) {
+        console.error('TELEGRAM_BOT_TOKEN is not configured');
+        return sendError(res, 500, 'Telegram auth is not configured');
+      }
+
+      const isValid = validateWebAppData(initData, botToken);
+      if (!isValid) {
+        return sendError(res, 400, 'Invalid Telegram initData');
+      }
+
+      const tgUser = parseInitDataUser(initData);
+      if (!tgUser || !tgUser.id) {
+        return sendError(res, 400, 'User data missing in initData');
+      }
+
+      const telegramId = tgUser.id.toString();
+
+      const existingLink = await prisma.user.findUnique({ where: { telegramId } });
+      if (existingLink && existingLink.id !== userId) {
+        return sendError(res, 400, 'This Telegram account is already linked to another user.');
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { telegramId },
+      });
+
+      return sendResponse(res, 200, {
+        user: { id: updatedUser.id, telegramId: updatedUser.telegramId }
+      }, 'Telegram account linked successfully');
     } catch (error: any) {
       return sendError(res, 500, error.message);
     }

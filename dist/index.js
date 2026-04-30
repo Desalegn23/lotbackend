@@ -5,7 +5,11 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import apiRoutes from './routes/index.js';
 import { sendError } from './utils/response.js';
+import { NotificationService } from './services/notificationService.js';
+import { SchedulerService } from './services/schedulerService.js';
 dotenv.config();
+NotificationService.initialize();
+SchedulerService.initialize();
 const app = express();
 const PORT = process.env.PORT || 5000;
 // Swagger definition

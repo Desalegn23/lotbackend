@@ -3,7 +3,7 @@ import { AuthController } from '../controllers/authController.js';
 import { LotteryController } from '../controllers/lotteryController.js';
 import { ReservationController } from '../controllers/reservationController.js';
 import { AdminController } from '../controllers/adminController.js';
-import { authenticate, agentOnly, adminOnly } from '../middleware/auth.js';
+import { authenticate, authenticateOptional, agentOnly, adminOnly } from '../middleware/auth.js';
 const router = Router();
 // ─────────────────────────────────────────────
 // AUTH ROUTES (public)
@@ -11,6 +11,7 @@ const router = Router();
 router.post('/auth/signup', AuthController.signup);
 router.post('/auth/login', AuthController.login);
 router.post('/auth/telegram', AuthController.loginWithTelegram);
+router.post('/auth/telegram/link', authenticate, AuthController.linkTelegram);
 router.get('/auth/me', authenticate, AuthController.me);
 router.post('/auth/bootstrap-admin', AuthController.bootstrapAdmin); // one-time setup, remove in prod
 // ─────────────────────────────────────────────
@@ -19,7 +20,9 @@ router.post('/auth/bootstrap-admin', AuthController.bootstrapAdmin); // one-time
 router.get('/lotteries', LotteryController.list);
 router.get('/lotteries/:id', LotteryController.getById);
 router.get('/lotteries/:id/tickets', LotteryController.getTickets);
-router.post('/reservations', ReservationController.reserve);
+router.get('/winners', LotteryController.listWinners);
+router.post('/reservations', authenticateOptional, ReservationController.reserve);
+router.get('/user/reservations', authenticate, ReservationController.listUserTickets);
 // ─────────────────────────────────────────────
 // AGENT ROUTES (JWT required, role: AGENT or ADMIN)
 // ─────────────────────────────────────────────

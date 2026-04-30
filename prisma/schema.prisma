@@ -27,8 +27,9 @@ model Agent {
   createdAt     DateTime  @default(now())
   accountNumber String?
   bankName      String?
-  user          User      @relation(fields: [userId], references: [id])
+  user          User            @relation(fields: [userId], references: [id])
   lotteries     Lottery[]
+  telegramGroups TelegramGroup[]
 }
 
 model Lottery {
@@ -158,4 +159,13 @@ enum ReservationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+model TelegramGroup {
+  id        String   @id @default(uuid())
+  chatId    String   @unique
+  groupName String?
+  agentId   String
+  createdAt DateTime @default(now())
+  agent     Agent    @relation(fields: [agentId], references: [id])
 }

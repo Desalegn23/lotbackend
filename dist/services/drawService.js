@@ -1,5 +1,6 @@
 import prisma from '../db/prisma.js';
 import { LotteryStatus, TicketStatus } from '@prisma/client';
+import { NotificationService } from './notificationService.js';
 export class DrawService {
     static async drawWinners(lotteryId) {
         return await prisma.$transaction(async (tx) => {
@@ -49,11 +50,42 @@ export class DrawService {
                 data: { status: LotteryStatus.COMPLETED },
             });
             // 6. Fetch full winner details to return
-            return await tx.winner.findMany({
+            const winnerRecords = await tx.winner.findMany({
                 where: { lotteryId },
                 include: { ticket: true },
                 orderBy: { prizePosition: 'asc' },
             });
+            // 7. Send notifications
+            try {
+                // Notify each winner individually
+                for (const w of winnerRecords) {
+                    if (!w.ticket.reservedBy)
+                        continue;
+                    // Find the user who reserved this ticket
+                    const reservation = await tx.reservationTicket.findFirst({
+                        where: { ticketId: w.ticketId },
+                        include: { reservation: { include: { user: true } } }
+                    });
+                    if (reservation?.reservation?.user?.telegramId) {
+                        await NotificationService.sendToUser(reservation.reservation.user.telegramId, `🎉 <b>CONGRATULATIONS!</b> 🎉\nYou won <b>${w.prizeAmount}</b> in the <b>${lottery.title}</b> draw! Ticket #${w.ticket.ticketNumber}`);
+                    }
+                }
+                // Notify agent personally
+                const agentWithUser = await tx.agent.findUnique({
+                    where: { id: lottery.agentId },
+                    include: { user: true }
+                });
+                if (agentWithUser?.user?.telegramId) {
+                    await NotificationService.sendToUser(agentWithUser.user.telegramId, `🏆 <b>Draw Complete!</b>\nThe draw for <b>${lottery.title}</b> is finished. ${winnerRecords.length} winner(s) selected.`);
+                }
+                // Broadcast winner announcement to agent groups
+                const winnerList = winnerRecords.map(w => `#${w.prizePosition} — Ticket #${w.ticket.ticketNumber} wins ${w.prizeAmount}`).join('\n');
+                await NotificationService.sendToAgentGroups(lottery.agentId, `🏆 <b>WE HAVE A WINNER!</b> 🏆\n\n<b>${lottery.title}</b> draw results:\n${winnerList}\n\nCongratulations to the winners! Next round starts soon.`);
+            }
+            catch (e) {
+                console.error('Failed to send draw notifications', e);
+            }
+            return winnerRecords;
         });
     }
     static async getLotteryWinners(lotteryId) {

@@ -113,6 +113,35 @@ export declare class LotteryService {
         ticketNumber: number;
         reservedBy: string | null;
     }[]>;
+    static getWinners(): Promise<({
+        lottery: {
+            agent: {
+                user: {
+                    name: string;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                userId: string;
+                accountNumber: string | null;
+                bankName: string | null;
+            };
+            title: string;
+        };
+        ticket: {
+            ticketNumber: number;
+            reservedBy: string | null;
+        };
+    } & {
+        id: string;
+        description: string | null;
+        drawnAt: Date;
+        prizeAmount: string;
+        prizeType: import("@prisma/client").$Enums.PrizeType | null;
+        lotteryId: string;
+        ticketId: string;
+        prizePosition: number;
+    })[]>;
 }
 export declare class AgentService {
     static getAgentLotteries(agentId: string): Promise<({

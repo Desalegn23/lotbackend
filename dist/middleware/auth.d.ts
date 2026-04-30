@@ -15,6 +15,10 @@ declare global {
  * Verify JWT from Authorization header and attach req.user
  */
 export declare const authenticate: (req: Request, res: Response, next: NextFunction) => Response<any, Record<string, any>> | undefined;
+/**
+ * Optional JWT verification - doesn't fail if token missing
+ */
+export declare const authenticateOptional: (req: Request, res: Response, next: NextFunction) => void;
 export declare const authorize: (roles: Role[]) => (req: Request, res: Response, next: NextFunction) => Response<any, Record<string, any>> | undefined;
 export declare const adminOnly: (req: Request, res: Response, next: NextFunction) => Response<any, Record<string, any>> | undefined;
 export declare const agentOnly: (req: Request, res: Response, next: NextFunction) => Response<any, Record<string, any>> | undefined;

@@ -95,6 +95,29 @@ export declare class AuthController {
      */
     static loginWithTelegram(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     /**
+     * @openapi
+     * /api/auth/telegram/link:
+     *   post:
+     *     summary: Link Telegram to an authenticated user
+     *     tags: [Auth]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [initData]
+     *             properties:
+     *               initData: { type: string }
+     *     responses:
+     *       200: { description: Telegram linked successfully }
+     *       400: { description: Invalid initData or already linked }
+     *       401: { description: Unauthorized }
+     */
+    static linkTelegram(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    /**
      * One-time admin bootstrap — creates the first ADMIN user.
      * Fails if any ADMIN already exists. Remove this route in production.
      */

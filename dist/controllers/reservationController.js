@@ -3,7 +3,11 @@ import { sendResponse, sendError } from '../utils/response.js';
 export class ReservationController {
     static async reserve(req, res) {
         try {
-            const reservation = await ReservationService.createPublicReservation(req.body);
+            const userId = req.user?.id;
+            const reservation = await ReservationService.createPublicReservation({
+                ...req.body,
+                userId
+            });
             sendResponse(res, 201, reservation, 'Reservation created successfully');
         }
         catch (error) {
@@ -46,6 +50,16 @@ export class ReservationController {
         try {
             const userId = req.user.id;
             const reservations = await ReservationService.getAgentReservations(userId);
+            sendResponse(res, 200, reservations);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
+    static async listUserTickets(req, res) {
+        try {
+            const userId = req.user.id;
+            const reservations = await ReservationService.getUserReservations(userId);
             sendResponse(res, 200, reservations);
         }
         catch (error) {

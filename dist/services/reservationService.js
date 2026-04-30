@@ -1,5 +1,6 @@
 import prisma from '../db/prisma.js';
 import { ReservationStatus, TicketStatus } from '@prisma/client';
+import { NotificationService } from './notificationService.js';
 export class ReservationService {
     static async createPublicReservation(data) {
         return await prisma.$transaction(async (tx) => {
@@ -18,6 +19,7 @@ export class ReservationService {
             const reservation = await tx.reservation.create({
                 data: {
                     lotteryId: data.lotteryId,
+                    userId: data.userId,
                     name: data.name,
                     email: data.email,
                     phone: data.phone,
@@ -39,6 +41,27 @@ export class ReservationService {
                     reservedBy: data.name,
                 },
             });
+            // 4. Send notifications
+            try {
+                const lottery = await tx.lottery.findUnique({
+                    where: { id: data.lotteryId },
+                    include: { agent: { include: { user: true } } }
+                });
+                // Notify the customer (if logged in and has Telegram linked)
+                if (data.userId) {
+                    const customer = await tx.user.findUnique({ where: { id: data.userId } });
+                    if (customer?.telegramId && lottery) {
+                        await NotificationService.sendToUser(customer.telegramId, `🎟️ <b>Ticket Reserved!</b>\nLottery: ${lottery.title}\nTickets: ${data.ticketIds.length}\nStatus: Pending Payment`);
+                    }
+                }
+                // Notify the agent
+                if (lottery?.agent?.user?.telegramId) {
+                    await NotificationService.sendToUser(lottery.agent.user.telegramId, `🔔 <b>New Reservation!</b>\nUser ${data.name} reserved ${data.ticketIds.length} ticket(s) on ${lottery.title}.`);
+                }
+            }
+            catch (e) {
+                console.error('Failed to send reservation notification', e);
+            }
             return reservation;
         });
     }
@@ -108,6 +131,20 @@ export class ReservationService {
                 where: { id: { in: ticketIds } },
                 data: { status: TicketStatus.SOLD },
             });
+            // 3. Notification
+            try {
+                const resWithDetails = await tx.reservation.findUnique({
+                    where: { id: reservationId },
+                    include: { user: true, lottery: true, tickets: { include: { ticket: true } } }
+                });
+                if (resWithDetails?.user?.telegramId) {
+                    const tNums = resWithDetails.tickets.map((t) => t.ticket.ticketNumber).join(', ');
+                    await NotificationService.sendToUser(resWithDetails.user.telegramId, `✅ <b>Payment Confirmed!</b>\nYour tickets #${tNums} for ${resWithDetails.lottery.title} are locked in. Good luck!`);
+                }
+            }
+            catch (e) {
+                console.error('Failed to send approval notification', e);
+            }
             return true;
         });
     }
@@ -161,6 +198,52 @@ export class ReservationService {
             },
             orderBy: { createdAt: 'desc' },
         });
+    }
+    static async getUserReservations(userId) {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, phone: true }
+        });
+        if (!user)
+            throw new Error('User not found');
+        // 1. Find all reservations belonging to this user
+        // Include those where userId matches OR (no userId but email/phone matches)
+        const reservations = await prisma.reservation.findMany({
+            where: {
+                OR: [
+                    { userId: userId },
+                    {
+                        userId: null,
+                        OR: [
+                            { email: user.email },
+                            user.phone ? { phone: user.phone } : {}
+                        ].filter(cond => Object.keys(cond).length > 0)
+                    }
+                ]
+            },
+            include: {
+                lottery: {
+                    select: { title: true }
+                },
+                tickets: {
+                    include: {
+                        ticket: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+        // 2. Auto-link unlinked reservations to this user for future efficiency
+        const unlinkedIds = reservations
+            .filter(r => !r.userId)
+            .map(r => r.id);
+        if (unlinkedIds.length > 0) {
+            await prisma.reservation.updateMany({
+                where: { id: { in: unlinkedIds } },
+                data: { userId: userId }
+            });
+        }
+        return reservations;
     }
 }
 //# sourceMappingURL=reservationService.js.map
