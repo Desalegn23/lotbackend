@@ -10,6 +10,7 @@ const router = Router();
 // ─────────────────────────────────────────────
 router.post('/auth/signup', AuthController.signup);
 router.post('/auth/login', AuthController.login);
+router.post('/auth/telegram', AuthController.loginWithTelegram);
 router.get('/auth/me', authenticate, AuthController.me);
 router.post('/auth/bootstrap-admin', AuthController.bootstrapAdmin); // one-time setup, remove in prod
 // ─────────────────────────────────────────────

@@ -118,7 +118,6 @@ export declare class AgentService {
     static getAgentLotteries(agentId: string): Promise<({
         _count: {
             tickets: number;
-            winners: number;
         };
         prizeDistribution: {
             id: string;

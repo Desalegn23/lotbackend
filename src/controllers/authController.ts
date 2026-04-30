@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../db/prisma.js';
 import { sendResponse, sendError } from '../utils/response.js';
+import { validateWebAppData, parseInitDataUser } from '../utils/telegramAuth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -248,6 +249,102 @@ export class AuthController {
       }
 
       return sendResponse(res, 200, agentProfile);
+    } catch (error: any) {
+      return sendError(res, 500, error.message);
+    }
+  }
+
+  /**
+   * @openapi
+   * /api/auth/telegram:
+   *   post:
+   *     summary: Login or Register via Telegram Mini App
+   *     tags: [Auth]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [initData]
+   *             properties:
+   *               initData: { type: string }
+   *     responses:
+   *       200: { description: Login successful, returns JWT token }
+   *       400: { description: Invalid Telegram initData }
+   *       500: { description: Server error }
+   */
+  static async loginWithTelegram(req: Request, res: Response) {
+    try {
+      const { initData } = req.body;
+      if (!initData) {
+        return sendError(res, 400, 'initData is required');
+      }
+
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      if (!botToken) {
+        console.error('TELEGRAM_BOT_TOKEN is not configured');
+        return sendError(res, 500, 'Telegram auth is not configured');
+      }
+
+      const isValid = validateWebAppData(initData, botToken);
+      if (!isValid) {
+        return sendError(res, 400, 'Invalid Telegram initData');
+      }
+
+      const tgUser = parseInitDataUser(initData);
+      if (!tgUser || !tgUser.id) {
+        return sendError(res, 400, 'User data missing in initData');
+      }
+
+      const telegramId = tgUser.id.toString();
+
+      // Find user by telegramId
+      let user = await prisma.user.findUnique({
+        where: { telegramId },
+        include: { agent: true },
+      });
+
+      if (!user) {
+        // Automatically create a new user account if not found
+        // Generates a random password since they login via Telegram
+        const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-10), 10);
+        
+        // Use a generated email since telegram might not provide one
+        const generatedEmail = `tg_${telegramId}@telegram.local`;
+        
+        const firstName = tgUser.first_name || '';
+        const lastName = tgUser.last_name || '';
+        const name = `${firstName} ${lastName}`.trim() || tgUser.username || `User ${telegramId}`;
+
+        user = await prisma.user.create({
+          data: {
+            telegramId,
+            name,
+            email: generatedEmail,
+            password: hashedPassword,
+            role: 'USER',
+          },
+          include: { agent: true },
+        });
+      }
+
+      if (user.status === 'INACTIVE') {
+        return sendError(res, 403, 'Your account has been deactivated. Contact an administrator.');
+      }
+
+      const token = signToken({ id: user.id, role: user.role });
+
+      return sendResponse(res, 200, {
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          agentId: user?.agent?.id ?? null,
+        },
+      }, 'Telegram login successful');
     } catch (error: any) {
       return sendError(res, 500, error.message);
     }

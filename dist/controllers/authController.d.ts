@@ -74,6 +74,27 @@ export declare class AuthController {
      */
     static getAgentProfile(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     /**
+     * @openapi
+     * /api/auth/telegram:
+     *   post:
+     *     summary: Login or Register via Telegram Mini App
+     *     tags: [Auth]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [initData]
+     *             properties:
+     *               initData: { type: string }
+     *     responses:
+     *       200: { description: Login successful, returns JWT token }
+     *       400: { description: Invalid Telegram initData }
+     *       500: { description: Server error }
+     */
+    static loginWithTelegram(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    /**
      * One-time admin bootstrap — creates the first ADMIN user.
      * Fails if any ADMIN already exists. Remove this route in production.
      */
