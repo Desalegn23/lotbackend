@@ -109,6 +109,31 @@ export class LotteryService {
       orderBy: { ticketNumber: 'asc' },
     });
   }
+
+  static async getWinners() {
+    return await prisma.winner.findMany({
+      include: {
+        lottery: {
+          select: {
+            title: true,
+            agent: {
+              include: {
+                user: { select: { name: true } }
+              }
+            }
+          }
+        },
+        ticket: {
+          select: {
+            ticketNumber: true,
+            reservedBy: true,
+          }
+        }
+      },
+      orderBy: { drawnAt: 'desc' },
+      take: 50
+    });
+  }
 }
 
 export class AgentService {

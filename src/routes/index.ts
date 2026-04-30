@@ -23,6 +23,7 @@ router.post('/auth/bootstrap-admin', AuthController.bootstrapAdmin); // one-time
 router.get('/lotteries', LotteryController.list);
 router.get('/lotteries/:id', LotteryController.getById);
 router.get('/lotteries/:id/tickets', LotteryController.getTickets);
+router.get('/winners', LotteryController.listWinners);
 router.post('/reservations', ReservationController.reserve);
 
 // ─────────────────────────────────────────────

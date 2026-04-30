@@ -115,6 +115,26 @@ export class LotteryController {
     }
   }
 
+  static async listWinners(req: Request, res: Response) {
+    try {
+      const winners = await LotteryService.getWinners();
+      const mappedWinners = winners.map((w: any) => ({
+        id: w.id,
+        name: w.ticket?.reservedBy || 'Anonymous',
+        prize: w.prizeAmount,
+        lotteryName: w.lottery?.title,
+        drawDate: w.drawnAt,
+        ticketNumber: w.ticket?.ticketNumber,
+        prizeType: w.prizeType,
+        verified: true,
+        agentName: w.lottery?.agent?.user?.name || 'System'
+      }));
+      sendResponse(res, 200, mappedWinners);
+    } catch (error: any) {
+      sendError(res, 500, error.message);
+    }
+  }
+
   static async listMyLotteries(req: Request, res: Response) {
     try {
       const userId = (req as any).user.id;
