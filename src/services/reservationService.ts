@@ -201,8 +201,28 @@ export class ReservationService {
   }
 
   static async getUserReservations(userId: string) {
-    return await prisma.reservation.findMany({
-      where: { userId: userId },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, phone: true }
+    });
+
+    if (!user) throw new Error('User not found');
+
+    // 1. Find all reservations belonging to this user
+    // Include those where userId matches OR (no userId but email/phone matches)
+    const reservations = await prisma.reservation.findMany({
+      where: {
+        OR: [
+          { userId: userId },
+          {
+            userId: null,
+            OR: [
+              { email: user.email },
+              user.phone ? { phone: user.phone } : {}
+            ].filter(cond => Object.keys(cond).length > 0)
+          }
+        ]
+      },
       include: {
         lottery: {
           select: { title: true }
@@ -215,5 +235,19 @@ export class ReservationService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    // 2. Auto-link unlinked reservations to this user for future efficiency
+    const unlinkedIds = reservations
+      .filter(r => !r.userId)
+      .map(r => r.id);
+
+    if (unlinkedIds.length > 0) {
+      await prisma.reservation.updateMany({
+        where: { id: { in: unlinkedIds } },
+        data: { userId: userId }
+      });
+    }
+
+    return reservations;
   }
 }
