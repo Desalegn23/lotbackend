@@ -78,7 +78,8 @@ export class LotteryService {
         },
         _count: {
           select: {
-            tickets: { where: { status: 'SOLD' } }
+            tickets: { where: { status: 'SOLD' } },
+            reservations: { where: { status: 'APPROVED' } }
           }
         }
       },
@@ -99,7 +100,8 @@ export class LotteryService {
         },
         _count: {
           select: {
-            tickets: { where: { status: 'SOLD' } }
+            tickets: { where: { status: 'SOLD' } },
+            reservations: { where: { status: 'APPROVED' } }
           }
         },
       },
