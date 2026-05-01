@@ -57,6 +57,8 @@ export class DrawService {
           ticketId: winningTicket.id,
           prizePosition: prize.position,
           prizeAmount: prize.prizeAmount,
+          prizeType: prize.prizeType,
+          description: prize.description,
         });
       }
 

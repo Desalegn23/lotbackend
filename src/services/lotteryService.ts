@@ -10,7 +10,7 @@ export class LotteryService {
     totalTickets: number;
     category: string;
     status?: LotteryStatus; // Made status optional with default
-    prizes: { position: number; amount: number; prizeType?: string; description?: string }[];
+    prizes: { position: number; amount: string | number; prizeType?: string; description?: string }[];
   }) {
     // 1. Resolve agent.id from userId
     const agent = await prisma.agent.findUnique({
