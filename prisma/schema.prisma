@@ -11,7 +11,7 @@ model User {
   name         String
   email        String?       @unique
   telegramId   String?       @unique
-  phone        String        @unique
+  phone        String?       @unique
   password     String
   role         Role          @default(USER)
   status       UserStatus    @default(ACTIVE)

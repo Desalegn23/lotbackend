@@ -42,8 +42,8 @@ export class AuthController {
     try {
       const { name, email, phone, password } = req.body;
 
-      if (!name || !password) {
-        return sendError(res, 400, 'name and password are required');
+      if (!name || !password || !phone) {
+        return sendError(res, 400, 'name, phone and password are required');
       }
 
       if (email) {
@@ -51,6 +51,11 @@ export class AuthController {
         if (existing) {
           return sendError(res, 400, 'Email already in use');
         }
+      }
+
+      const existingPhone = await prisma.user.findFirst({ where: { phone: phone as string } });
+      if (existingPhone) {
+        return sendError(res, 400, 'Phone number already in use');
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
