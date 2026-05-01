@@ -236,7 +236,7 @@ export class ReservationService {
       },
       include: {
         lottery: {
-          select: { title: true }
+          select: { title: true, ticketPrice: true }
         },
         tickets: {
           include: {

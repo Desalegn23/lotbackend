@@ -41,6 +41,9 @@ export class LotteryService {
             })),
           },
         },
+        include: {
+          prizeDistribution: true
+        }
       });
 
       // 3. Generate tickets automatically (1 to totalTickets)
