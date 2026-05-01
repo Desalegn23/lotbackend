@@ -7,9 +7,7 @@ export class ReservationService {
     if (!data.name || data.name.trim() === '') {
       throw new Error('Name is required for reservation');
     }
-    if (!data.email || data.email.trim() === '') {
-      throw new Error('Email is required for reservation');
-    }
+    // Email is now optional, so we remove the validation check for it
     if (!data.phone || data.phone.trim() === '') {
       throw new Error('Phone number is required for reservation');
     }
