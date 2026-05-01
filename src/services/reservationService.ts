@@ -21,6 +21,19 @@ export class ReservationService {
     ticketIds: string[];
     userId?: string;
   }) {
+    // If authenticated, pre-fill missing info from user profile
+    if (data.userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: data.userId }
+      });
+      
+      if (user) {
+        data.name = data.name || user.name;
+        data.email = data.email || user.email || '';
+        data.phone = data.phone || user.phone || '';
+      }
+    }
+
     this.validateReservationData(data);
     return await prisma.$transaction(async (tx: any) => {
       // 1. Verify tickets are available

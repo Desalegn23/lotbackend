@@ -42,13 +42,15 @@ export class AuthController {
     try {
       const { name, email, phone, password } = req.body;
 
-      if (!name || !email || !password) {
-        return sendError(res, 400, 'name, email and password are required');
+      if (!name || !password) {
+        return sendError(res, 400, 'name and password are required');
       }
 
-      const existing = await prisma.user.findUnique({ where: { email } });
-      if (existing) {
-        return sendError(res, 400, 'Email already in use');
+      if (email) {
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (existing) {
+          return sendError(res, 400, 'Email already in use');
+        }
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -61,7 +63,7 @@ export class AuthController {
 
       return sendResponse(res, 201, {
         token,
-        user: { id: user.id, name: user.name, email: user.email, role: user.role },
+        user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },
       }, 'Account created successfully');
     } catch (error: any) {
       return sendError(res, 500, error.message);
@@ -97,7 +99,7 @@ export class AuthController {
         return sendError(res, 400, 'email and password are required');
       }
 
-      const user = await prisma.user.findUnique({
+      const user = await prisma.user.findFirst({
         where: { email },
         include: { agent: true },
       });
@@ -123,6 +125,7 @@ export class AuthController {
           id: user.id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
           role: user.role,
           agentId: user.agent?.id ?? null,
         },
@@ -322,6 +325,7 @@ export class AuthController {
           id: user.id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
           role: user.role,
           agentId: user?.agent?.id ?? null,
         },

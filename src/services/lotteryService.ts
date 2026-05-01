@@ -63,7 +63,7 @@ export class LotteryService {
   }
 
   static async getActiveLotteries() {
-    return await prisma.lottery.findMany({
+    const lotteries = await prisma.lottery.findMany({
       where: {
         status: LotteryStatus.ACTIVE,
       },
@@ -84,10 +84,26 @@ export class LotteryService {
         }
       },
     });
+
+    // Calculate unique participants for each lottery
+    return await Promise.all(lotteries.map(async (lottery) => {
+      const uniqueParticipants = await prisma.reservation.groupBy({
+        by: ['phone'],
+        where: {
+          lotteryId: lottery.id,
+          status: 'APPROVED',
+        },
+      });
+      
+      return {
+        ...lottery,
+        uniqueParticipantCount: uniqueParticipants.length
+      };
+    }));
   }
 
   static async getLotteryById(id: string) {
-    return await prisma.lottery.findUnique({
+    const lottery = await prisma.lottery.findUnique({
       where: { id },
       include: {
         prizeDistribution: true,
@@ -106,6 +122,21 @@ export class LotteryService {
         },
       },
     });
+
+    if (!lottery) return null;
+
+    const uniqueParticipants = await prisma.reservation.groupBy({
+      by: ['phone'],
+      where: {
+        lotteryId: id,
+        status: 'APPROVED',
+      },
+    });
+
+    return {
+      ...lottery,
+      uniqueParticipantCount: uniqueParticipants.length
+    };
   }
 
   static async getLotteryTickets(id: string) {
