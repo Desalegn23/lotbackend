@@ -3,6 +3,18 @@ import { ReservationStatus, TicketStatus } from '@prisma/client';
 import { NotificationService } from './notificationService.js';
 
 export class ReservationService {
+  private static validateReservationData(data: { name: string; email: string; phone: string }) {
+    if (!data.name || data.name.trim() === '') {
+      throw new Error('Name is required for reservation');
+    }
+    if (!data.email || data.email.trim() === '') {
+      throw new Error('Email is required for reservation');
+    }
+    if (!data.phone || data.phone.trim() === '') {
+      throw new Error('Phone number is required for reservation');
+    }
+  }
+
   static async createPublicReservation(data: {
     lotteryId: string;
     name: string;
@@ -11,6 +23,7 @@ export class ReservationService {
     ticketIds: string[];
     userId?: string;
   }) {
+    this.validateReservationData(data);
     return await prisma.$transaction(async (tx: any) => {
       // 1. Verify tickets are available
       const tickets = await tx.ticket.findMany({
@@ -94,6 +107,7 @@ export class ReservationService {
     phone: string;
     ticketIds: string[];
   }) {
+    this.validateReservationData(data);
     return await prisma.$transaction(async (tx: any) => {
       // 1. Verify tickets are available
       const tickets = await tx.ticket.findMany({
@@ -137,7 +151,19 @@ export class ReservationService {
         },
       });
 
-      return reservation;
+      return await tx.reservation.findUnique({
+        where: { id: reservation.id },
+        include: {
+          lottery: {
+            select: { title: true, ticketPrice: true }
+          },
+          tickets: {
+            include: {
+              ticket: true
+            }
+          }
+        }
+      });
     });
   }
 

@@ -87,7 +87,7 @@ model Reservation {
   lotteryId        String
   userId           String?
   name             String
-  email            String
+  email            String?
   phone            String
   reservedByAgent  Boolean             @default(false)
   paymentConfirmed Boolean             @default(false)

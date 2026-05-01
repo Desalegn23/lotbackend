@@ -2,7 +2,19 @@ import prisma from '../db/prisma.js';
 import { ReservationStatus, TicketStatus } from '@prisma/client';
 import { NotificationService } from './notificationService.js';
 export class ReservationService {
+    static validateReservationData(data) {
+        if (!data.name || data.name.trim() === '') {
+            throw new Error('Name is required for reservation');
+        }
+        if (!data.email || data.email.trim() === '') {
+            throw new Error('Email is required for reservation');
+        }
+        if (!data.phone || data.phone.trim() === '') {
+            throw new Error('Phone number is required for reservation');
+        }
+    }
     static async createPublicReservation(data) {
+        this.validateReservationData(data);
         return await prisma.$transaction(async (tx) => {
             // 1. Verify tickets are available
             const tickets = await tx.ticket.findMany({
@@ -66,6 +78,7 @@ export class ReservationService {
         });
     }
     static async createAgentReservation(data) {
+        this.validateReservationData(data);
         return await prisma.$transaction(async (tx) => {
             // 1. Verify tickets are available
             const tickets = await tx.ticket.findMany({
@@ -105,7 +118,19 @@ export class ReservationService {
                     reservedBy: data.name,
                 },
             });
-            return reservation;
+            return await tx.reservation.findUnique({
+                where: { id: reservation.id },
+                include: {
+                    lottery: {
+                        select: { title: true, ticketPrice: true }
+                    },
+                    tickets: {
+                        include: {
+                            ticket: true
+                        }
+                    }
+                }
+            });
         });
     }
     static async approveReservation(reservationId) {
@@ -188,7 +213,7 @@ export class ReservationService {
             },
             include: {
                 lottery: {
-                    select: { title: true }
+                    select: { title: true, ticketPrice: true }
                 },
                 tickets: {
                     include: {

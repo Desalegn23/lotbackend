@@ -15,6 +15,15 @@ export declare class LotteryService {
             description?: string;
         }[];
     }): Promise<{
+        prizeDistribution: {
+            id: string;
+            description: string | null;
+            position: number;
+            prizeAmount: string;
+            prizeType: import("@prisma/client").$Enums.PrizeType | null;
+            lotteryId: string;
+        }[];
+    } & {
         id: string;
         status: import("@prisma/client").$Enums.LotteryStatus;
         createdAt: Date;
@@ -216,7 +225,7 @@ export declare class AgentService {
         reservationTickets: ({
             reservation: {
                 name: string;
-                email: string;
+                email: string | null;
                 phone: string;
                 id: string;
                 status: import("@prisma/client").$Enums.ReservationStatus;

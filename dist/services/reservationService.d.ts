@@ -1,4 +1,5 @@
 export declare class ReservationService {
+    private static validateReservationData;
     static createPublicReservation(data: {
         lotteryId: string;
         name: string;
@@ -20,6 +21,7 @@ export declare class ReservationService {
     static getAgentReservations(userId: string): Promise<({
         lottery: {
             title: string;
+            ticketPrice: number;
         };
         tickets: ({
             ticket: {
@@ -37,7 +39,7 @@ export declare class ReservationService {
         })[];
     } & {
         name: string;
-        email: string;
+        email: string | null;
         phone: string;
         id: string;
         status: import("@prisma/client").$Enums.ReservationStatus;
@@ -68,7 +70,7 @@ export declare class ReservationService {
         })[];
     } & {
         name: string;
-        email: string;
+        email: string | null;
         phone: string;
         id: string;
         status: import("@prisma/client").$Enums.ReservationStatus;
