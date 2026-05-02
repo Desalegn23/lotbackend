@@ -144,6 +144,13 @@ export class NotificationService {
     }
   }
 
+  static getDeepLink(param: string) {
+    const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'daily_meznagna_bot';
+    const appName = process.env.TELEGRAM_APP_NAME || 'play';
+    // Format: https://t.me/botusername/appname?startapp=parameter
+    return `https://t.me/${botUsername}/${appName}?startapp=${param}`;
+  }
+
   /**
    * Event: New Reservation Created
    * Notifies the agent about a pending payment.
@@ -169,7 +176,10 @@ export class NotificationService {
         `Lottery: <b>${reservation.lottery.title}</b>\n` +
         `Tickets: <b>${ticketNumbers}</b>\n` +
         `Amount: <b>ETB ${reservation.tickets.length * reservation.lottery.ticketPrice}</b>\n\n` +
-        `Please check the dashboard to confirm payment.`
+        `Please check the dashboard to confirm payment.`,
+        Markup.inlineKeyboard([
+          [Markup.button.webApp("Open Dashboard", process.env.FRONTEND_URL || "")]
+        ])
       );
     } catch (e) {
       console.error('Failed notifyReservationCreated', e);
@@ -200,7 +210,10 @@ export class NotificationService {
         `✅ <b>Payment Confirmed!</b>\n\n` +
         `Your reservation for <b>${reservation.lottery.title}</b> has been approved.\n` +
         `Your tickets: <b>${ticketNumbers}</b>\n\n` +
-        `Good luck! 🍀`
+        `Good luck! 🍀`,
+        Markup.inlineKeyboard([
+          [Markup.button.url("View My Tickets", this.getDeepLink(`lottery_${reservation.lotteryId}`))]
+        ])
       );
     } catch (e) {
       console.error('Failed notifyReservationApproved', e);
@@ -216,9 +229,14 @@ export class NotificationService {
 
       for (const group of groups) {
         try {
+          // If no markup provided, add a default "Join & Play" button
+          const finalMarkup = markup || Markup.inlineKeyboard([
+            [Markup.button.url("🍀 Play Now", this.getDeepLink("browse"))]
+          ]);
+
           await this.bot.telegram.sendMessage(group.chatId, message, {
             parse_mode: 'HTML',
-            ...markup
+            ...finalMarkup
           });
         } catch (e) {
           console.error(`Failed to send message to group ${group.chatId}`, e);
