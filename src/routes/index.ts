@@ -43,6 +43,8 @@ router.get('/agent/summary', authenticate, agentOnly, LotteryController.getMySta
 router.get('/agent/winners', authenticate, agentOnly, LotteryController.listMyWinners);
 router.get('/agent/lotteries/:id/tickets', authenticate, agentOnly, LotteryController.getMyLotteryTickets);
 router.get('/agent/lotteries/:id/winners', authenticate, agentOnly, LotteryController.getMyLotteryWinners);
+router.put('/agent/notification-settings', authenticate, agentOnly, AdminController.updateNotificationSettings);
+
 
 // ─────────────────────────────────────────────
 // ADMIN ROUTES (JWT required, role: ADMIN only)

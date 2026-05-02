@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ReservationService } from '../services/reservationService.js';
 import { sendResponse, sendError } from '../utils/response.js';
+import { NotificationService } from '../services/notificationService.js';
 
 export class ReservationController {
   static async reserve(req: Request, res: Response) {
@@ -10,6 +11,10 @@ export class ReservationController {
         ...req.body,
         userId
       });
+
+      // Notify agent about new reservation
+      NotificationService.notifyReservationCreated(reservation.id).catch(console.error);
+
       sendResponse(res, 201, reservation, 'Reservation created successfully');
     } catch (error: any) {
       sendError(res, 400, error.message);
@@ -32,7 +37,12 @@ export class ReservationController {
 
   static async approve(req: Request, res: Response) {
     try {
-      await ReservationService.approveReservation(req.params.id as string);
+      const reservationId = req.params.id as string;
+      await ReservationService.approveReservation(reservationId);
+
+      // Notify user about approval
+      NotificationService.notifyReservationApproved(reservationId).catch(console.error);
+
       sendResponse(res, 200, null, 'Reservation approved');
     } catch (error: any) {
       sendError(res, 400, error.message);

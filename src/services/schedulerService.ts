@@ -10,8 +10,8 @@ export class SchedulerService {
       await this.sendDailyAgentSummaries();
     });
 
-    // Urgency/Marketing scan — every 2 hours
-    cron.schedule('0 */2 * * *', async () => {
+    // Urgency/Marketing scan — every hour
+    cron.schedule('0 * * * *', async () => {
       console.log('[CRON] Running urgency marketing scan...');
       await this.sendUrgencyMarketingMessages();
     });
@@ -68,11 +68,13 @@ export class SchedulerService {
   }
 
   /**
-   * Urgency/Marketing — Checks active lotteries. If a lottery has ≤20% tickets
-   * remaining, broadcasts a promotional message to the agent's groups.
+   * Urgency/Marketing — Checks active lotteries.
+   * Respects Agent settings: notifyInterval, notifyThreshold, notifyLanguage, customMessage.
    */
   static async sendUrgencyMarketingMessages() {
     try {
+      const currentHour = new Date().getHours();
+      
       const lotteries = await prisma.lottery.findMany({
         where: { status: 'ACTIVE' },
         include: {
@@ -80,7 +82,7 @@ export class SchedulerService {
           tickets: {
             where: { status: 'AVAILABLE' },
             orderBy: { ticketNumber: 'asc' },
-            take: 10, // Show up to 10 remaining numbers
+            take: 10,
             select: { ticketNumber: true }
           },
           _count: {
@@ -96,31 +98,69 @@ export class SchedulerService {
       });
 
       for (const lottery of lotteries) {
+        const agent = lottery.agent;
+        if (!agent) continue;
+
+        // 1. Check if notifications are disabled
+        if (agent.notifyInterval === 'DISABLED') continue;
+
+        // 2. Check Interval (Heuristic)
+        let shouldNotify = false;
+        if (agent.notifyInterval === '2H' && currentHour % 2 === 0) shouldNotify = true;
+        else if (agent.notifyInterval === '4H' && currentHour % 4 === 0) shouldNotify = true;
+        else if (agent.notifyInterval === '12H' && currentHour % 12 === 0) shouldNotify = true;
+        else if (agent.notifyInterval === 'DAILY' && currentHour === 20) shouldNotify = true;
+        else if (!['2H', '4H', '12H', 'DAILY'].includes(agent.notifyInterval)) shouldNotify = true; // Default/Unknown
+
+        if (!shouldNotify) continue;
+
+        // 3. Check Threshold
         const availableCount = (lottery as any)._count.tickets;
         const percentRemaining = (availableCount / lottery.totalTickets) * 100;
-
-        // Only broadcast urgency if ≤20% tickets remain
-        if (percentRemaining > 20) continue;
+        
+        const threshold = agent.notifyThreshold || 20;
+        if (percentRemaining > threshold) continue;
         if (availableCount === 0) continue;
 
+        // 4. Construct Message based on Language
+        const lang = agent.notifyLanguage || 'EN';
         const remainingNums = lottery.tickets.map(t => t.ticketNumber).join(', ');
-        const topPrize = lottery.prizeDistribution[0]?.prizeAmount || 'Amazing prizes';
+        const topPrize = lottery.prizeDistribution[0]?.prizeAmount || (lang === 'AM' ? 'ታላላቅ ሽልማቶች' : 'Amazing prizes');
 
-        await NotificationService.sendToAgentGroups(
-          lottery.agentId,
-          `🔥 <b>HURRY! ONLY ${availableCount} TICKETS LEFT!</b> 🔥\n\n` +
-          `<b>${lottery.title}</b>\n` +
-          `Remaining numbers: ${remainingNums}${availableCount > 10 ? '...' : ''}\n\n` +
-          `For just <b>ETB ${lottery.ticketPrice}</b> per ticket, who will win <b>${topPrize}</b>?\n` +
-          `Try your chance now! 🍀`
-        );
+        let message = "";
+        if (agent.customMessage) {
+          // Use custom template if provided
+          message = agent.customMessage
+            .replace('{title}', lottery.title)
+            .replace('{count}', availableCount.toString())
+            .replace('{price}', lottery.ticketPrice.toString())
+            .replace('{prize}', topPrize)
+            .replace('{numbers}', remainingNums);
+        } else if (lang === 'AM') {
+          // Default Amharic
+          message = `🔥 <b>ፈጥነው ይውሰዱ! የቀሩት ${availableCount} ቲኬቶች ብቻ ናቸው!</b> 🔥\n\n` +
+            `<b>${lottery.title}</b>\n` +
+            `ያልተያዙ ቁጥሮች: ${remainingNums}${availableCount > 10 ? '...' : ''}\n\n` +
+            `በ <b>${lottery.ticketPrice} ብር</b> ብቻ የ <b>${topPrize}</b> ባለዕድል ይሁኑ!\n` +
+            `አሁኑኑ ይሞክሩ! 🍀`;
+        } else {
+          // Default English
+          message = `🔥 <b>HURRY! ONLY ${availableCount} TICKETS LEFT!</b> 🔥\n\n` +
+            `<b>${lottery.title}</b>\n` +
+            `Remaining numbers: ${remainingNums}${availableCount > 10 ? '...' : ''}\n\n` +
+            `For just <b>ETB ${lottery.ticketPrice}</b> per ticket, who will win <b>${topPrize}</b>?\n` +
+            `Try your chance now! 🍀`;
+        }
 
-        // Also notify the agent personally about capacity
-        if (lottery.agent?.user?.telegramId) {
-          await NotificationService.sendToUser(
-            lottery.agent.user.telegramId,
-            `⚠️ <b>Almost Sold Out!</b>\n<b>${lottery.title}</b> has only <b>${availableCount}</b> tickets remaining (${Math.round(percentRemaining)}%).`
-          );
+        await NotificationService.sendToAgentGroups(lottery.agentId, message);
+
+        // Also notify the agent personally if capacity is low
+        if (agent.user?.telegramId) {
+          const personalMsg = lang === 'AM'
+            ? `⚠️ <b>ቲኬቶች ሊያልቁ ነው!</b>\n<b>${lottery.title}</b> የቀሩት <b>${availableCount}</b> ቲኬቶች ብቻ ናቸው (${Math.round(percentRemaining)}%)።`
+            : `⚠️ <b>Almost Sold Out!</b>\n<b>${lottery.title}</b> has only <b>${availableCount}</b> tickets remaining (${Math.round(percentRemaining)}%).`;
+            
+          await NotificationService.sendToUser(agent.user.telegramId, personalMsg);
         }
       }
     } catch (e) {

@@ -176,3 +176,10 @@ model TelegramGroup {
   createdAt DateTime @default(now())
   agent     Agent    @relation(fields: [agentId], references: [id])
 }
+
+model TelegramLead {
+  id         String   @id @default(uuid())
+  telegramId String   @unique
+  createdAt  DateTime @default(now())
+}
+

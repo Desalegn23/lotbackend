@@ -15,22 +15,61 @@ export class NotificationService {
 
     this.bot = new Telegraf(token);
 
-    // Handle bot being added to a group with payload
+    // Handle start
     this.bot.start(async (ctx) => {
+      // Private chat handler
+      if (ctx.chat.type === 'private') {
+        const telegramId = ctx.from.id.toString();
+        try {
+          const user = await prisma.user.findUnique({ where: { telegramId } });
+          
+          if (!user) {
+            // Capture as a lead for marketing
+            await prisma.telegramLead.upsert({
+              where: { telegramId },
+              update: {},
+              create: { telegramId }
+            });
+
+            await ctx.reply(
+              "👋 Welcome to the Lottery Bot!\n\n" +
+              "To get started, please open our Mini App to link your account.",
+              Markup.inlineKeyboard([
+                [Markup.button.webApp("Open Mini App", process.env.FRONTEND_URL || "")]
+              ])
+            );
+            return;
+          }
+
+          let message = "";
+          if (user.role === 'AGENT') {
+            message = `👨‍💼 <b>Welcome Agent ${user.name}!</b>\n\nYou will receive updates here about new reservations and sold-out lotteries.`;
+          } else if (user.role === 'ADMIN') {
+            message = `👑 <b>Welcome Admin ${user.name}!</b>\n\nSystem alerts and summaries will be sent here.`;
+          } else {
+            message = `👋 <b>Hello ${user.name}!</b>\n\nWelcome to your lottery dashboard. You will receive winner alerts and reservation updates here.`;
+          }
+
+          await ctx.reply(message, { parse_mode: 'HTML' });
+        } catch (e) {
+          console.error('Failed to handle bot start', e);
+        }
+        return;
+      }
+
+      // Group/Supergroup logic with payload
       if (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup') {
         const payload = ctx.startPayload;
         if (payload && payload.startsWith('agent_')) {
           const agentId = payload.replace('agent_', '');
           
           try {
-            // Verify agent exists
             const agent = await prisma.agent.findUnique({ where: { id: agentId }, include: { user: true } });
             if (!agent) {
               await ctx.reply('Error: Invalid Agent ID.');
               return;
             }
 
-            // Save group
             await prisma.telegramGroup.upsert({
               where: { chatId: ctx.chat.id.toString() },
               update: { agentId, groupName: ctx.chat.title },
@@ -53,7 +92,6 @@ export class NotificationService {
     this.bot.launch().catch(e => console.error('Failed to launch telegraf', e));
     this.isInitialized = true;
 
-    // Enable graceful stop
     process.once('SIGINT', () => this.bot?.stop('SIGINT'));
     process.once('SIGTERM', () => this.bot?.stop('SIGTERM'));
     
@@ -69,6 +107,103 @@ export class NotificationService {
       });
     } catch (e) {
       console.error(`Failed to send message to user ${telegramId}`, e);
+    }
+  }
+
+  static async sendToUserById(userId: string, message: string, markup?: any) {
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramId: true } });
+      if (user?.telegramId) {
+        await this.sendToUser(user.telegramId, message, markup);
+      }
+    } catch (e) {
+      console.error(`Failed to send message to userId ${userId}`, e);
+    }
+  }
+
+  static async broadcastToRole(role: 'USER' | 'AGENT' | 'ADMIN', message: string) {
+    try {
+      const users = await prisma.user.findMany({
+        where: { role, telegramId: { not: null } },
+        select: { telegramId: true }
+      });
+
+      const telegramIds = new Set(users.map(u => u.telegramId).filter(Boolean) as string[]);
+
+      // If broadcasting to USERS, also include TelegramLeads
+      if (role === 'USER') {
+        const leads = await prisma.telegramLead.findMany({ select: { telegramId: true } });
+        leads.forEach(l => telegramIds.add(l.telegramId));
+      }
+
+      for (const tid of telegramIds) {
+        await this.sendToUser(tid, message);
+      }
+    } catch (e) {
+      console.error(`Failed to broadcast to role ${role}`, e);
+    }
+  }
+
+  /**
+   * Event: New Reservation Created
+   * Notifies the agent about a pending payment.
+   */
+  static async notifyReservationCreated(reservationId: string) {
+    try {
+      const reservation = await prisma.reservation.findUnique({
+        where: { id: reservationId },
+        include: {
+          lottery: { include: { agent: { include: { user: true } } } },
+          tickets: { include: { ticket: true } }
+        }
+      });
+
+      if (!reservation || !reservation.lottery.agent.user.telegramId) return;
+
+      const ticketNumbers = reservation.tickets.map(t => t.ticket.ticketNumber).join(', ');
+      
+      await this.sendToUser(
+        reservation.lottery.agent.user.telegramId,
+        `⏳ <b>New Reservation!</b>\n\n` +
+        `Customer: <b>${reservation.name}</b>\n` +
+        `Lottery: <b>${reservation.lottery.title}</b>\n` +
+        `Tickets: <b>${ticketNumbers}</b>\n` +
+        `Amount: <b>ETB ${reservation.tickets.length * reservation.lottery.ticketPrice}</b>\n\n` +
+        `Please check the dashboard to confirm payment.`
+      );
+    } catch (e) {
+      console.error('Failed notifyReservationCreated', e);
+    }
+  }
+
+  /**
+   * Event: Reservation Approved
+   * Notifies the customer that their tickets are secured.
+   */
+  static async notifyReservationApproved(reservationId: string) {
+    try {
+      const reservation = await prisma.reservation.findUnique({
+        where: { id: reservationId },
+        include: {
+          user: true,
+          lottery: true,
+          tickets: { include: { ticket: true } }
+        }
+      });
+
+      if (!reservation || !reservation.user?.telegramId) return;
+
+      const ticketNumbers = reservation.tickets.map(t => t.ticket.ticketNumber).join(', ');
+
+      await this.sendToUser(
+        reservation.user.telegramId,
+        `✅ <b>Payment Confirmed!</b>\n\n` +
+        `Your reservation for <b>${reservation.lottery.title}</b> has been approved.\n` +
+        `Your tickets: <b>${ticketNumbers}</b>\n\n` +
+        `Good luck! 🍀`
+      );
+    } catch (e) {
+      console.error('Failed notifyReservationApproved', e);
     }
   }
 

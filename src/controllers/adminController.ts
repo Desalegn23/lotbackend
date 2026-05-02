@@ -511,4 +511,25 @@ export class AdminController {
     }
   }
 
+  static async updateNotificationSettings(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+      const { notifyInterval, notifyThreshold, notifyLanguage, customMessage } = req.body;
+
+      const agent = await prisma.agent.update({
+        where: { userId },
+        data: {
+          notifyInterval,
+          notifyThreshold: Number(notifyThreshold),
+          notifyLanguage,
+          customMessage
+        }
+      });
+
+      sendResponse(res, 200, agent, "Notification settings updated successfully");
+    } catch (error: any) {
+      sendError(res, 400, error.message);
+    }
+  }
+
 }
