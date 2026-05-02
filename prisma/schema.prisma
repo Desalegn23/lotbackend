@@ -27,6 +27,13 @@ model Agent {
   createdAt     DateTime  @default(now())
   accountNumber String?
   bankName      String?
+  
+  // Notification Settings
+  notifyInterval  String    @default("4H") // DISABLED, 2H, 4H, 12H, DAILY
+  notifyThreshold Int       @default(20)   // Percentage of tickets remaining
+  notifyLanguage  String    @default("EN") // EN, AM
+  customMessage   String?   // Custom Amharic/English message template
+  
   user          User            @relation(fields: [userId], references: [id])
   lotteries     Lottery[]
   telegramGroups TelegramGroup[]
