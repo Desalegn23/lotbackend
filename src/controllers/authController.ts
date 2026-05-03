@@ -191,6 +191,10 @@ export class AuthController {
             },
             bankName: true,
             accountNumber: true,
+            notifyInterval: true,
+            notifyThreshold: true,
+            notifyLanguage: true,
+            customMessage: true,
             createdAt: true,
           },
         });
@@ -249,6 +253,10 @@ export class AuthController {
           },
           bankName: true,
           accountNumber: true,
+          notifyInterval: true,
+          notifyThreshold: true,
+          notifyLanguage: true,
+          customMessage: true,
           createdAt: true,
         },
       });
