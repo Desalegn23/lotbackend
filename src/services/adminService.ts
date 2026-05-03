@@ -104,4 +104,30 @@ export class AdminService {
       createdAt: a.createdAt
     }));
   }
+
+  static async getAgentSalesSummary() {
+    const agents = await prisma.agent.findMany({
+      include: {
+        user: { select: { name: true } },
+        lotteries: {
+          include: {
+            _count: {
+              select: { tickets: { where: { status: 'SOLD' } } }
+            }
+          }
+        }
+      }
+    });
+
+    return agents.map(agent => ({
+      agentId: agent.id,
+      agentName: agent.user.name,
+      lotteries: agent.lotteries.map(l => ({
+        id: l.id,
+        title: l.title,
+        soldTickets: (l as any)._count.tickets,
+        revenue: (l as any)._count.tickets * l.ticketPrice
+      }))
+    }));
+  }
 }

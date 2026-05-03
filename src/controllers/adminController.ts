@@ -17,13 +17,23 @@ interface LotteryWithWinners {
 export class AdminController {
   
   private static mapAgentResponse(a: any) {
-    let revenue = 0;
+    let totalGrossRevenue = 0;
+    let totalPrizes = 0;
+    
     if (a.lotteries) {
       a.lotteries.forEach((l: any) => {
+        const soldCount = l._count?.tickets || 0;
+        const gross = l.ticketPrice * soldCount;
         const prizeTotal = l.winners ? l.winners.reduce((s: number, w: any) => s + (w.prizeAmount || 0), 0) : 0;
-        revenue += (l.ticketPrice * l.totalTickets) - prizeTotal;
+        
+        totalGrossRevenue += gross;
+        totalPrizes += prizeTotal;
       });
     }
+
+    const netProfit = totalGrossRevenue - totalPrizes;
+    const adminCommission = netProfit * ((a.commissionRate || 10) / 100);
+    const agentNet = netProfit - adminCommission;
 
     return {
       id: a.id,
@@ -33,8 +43,12 @@ export class AdminController {
       status: a.user.status,
       bankName: a.bankName || '',
       accountNumber: a.accountNumber || '',
+      commissionRate: a.commissionRate || 10,
       totalLotteries: a.lotteries ? a.lotteries.length : 0,
-      revenueGenerated: revenue,
+      totalRevenue: totalGrossRevenue,
+      totalPrizes: totalPrizes,
+      adminCommission: Math.max(0, adminCommission),
+      agentNet: Math.max(0, agentNet),
       createdAt: a.user.createdAt || a.createdAt
     };
   }
@@ -110,7 +124,7 @@ export class AdminController {
 
   static async createAgent(req: Request, res: Response) {
     try {
-      const { name, email, phone, password, bankName, accountNumber } = req.body;
+      const { name, email, phone, password, bankName, accountNumber, commissionRate } = req.body;
 
       const existingUser = await prisma.user.findUnique({
         where: { email }
@@ -137,7 +151,8 @@ export class AdminController {
           data: {
             userId: user.id,
             bankName: String(bankName || ''),
-            accountNumber: String(accountNumber || '')
+            accountNumber: String(accountNumber || ''),
+            commissionRate: Number(commissionRate || 10)
           },
           include: {
             user: true
@@ -155,13 +170,14 @@ export class AdminController {
 
   static async updateAgent(req: Request, res: Response) {
     try {
-      const { name, email, phone, status, bankName, accountNumber } = req.body;
+      const { name, email, phone, status, bankName, accountNumber, commissionRate } = req.body;
 
       const agent = await prisma.agent.update({
         where: { id: String(req.params.id) },
         data: {
           bankName: String(bankName || ''),
           accountNumber: String(accountNumber || ''),
+          commissionRate: Number(commissionRate || 10),
           user: {
             update: {
               name,
@@ -496,7 +512,8 @@ export class AdminController {
   static async monitorSystem(req: Request, res: Response) {
     try {
       const summary = await AdminService.getSystemSummary();
-      sendResponse(res, 200, summary);
+      const agentSales = await AdminService.getAgentSalesSummary();
+      sendResponse(res, 200, { ...summary, agentSales });
     } catch (error: any) {
       sendError(res, 500, error.message);
     }

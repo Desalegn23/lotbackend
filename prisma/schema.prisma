@@ -27,6 +27,7 @@ model Agent {
   createdAt     DateTime  @default(now())
   accountNumber String?
   bankName      String?
+  commissionRate Float     @default(10.0) // Admin's % cut of the profit
   
   // Notification Settings
   notifyInterval  String    @default("4H") // DISABLED, 2H, 4H, 12H, DAILY
