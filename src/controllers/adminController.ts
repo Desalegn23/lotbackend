@@ -24,7 +24,13 @@ export class AdminController {
       a.lotteries.forEach((l: any) => {
         const soldCount = l._count?.tickets || 0;
         const gross = l.ticketPrice * soldCount;
-        const prizeTotal = l.winners ? l.winners.reduce((s: number, w: any) => s + (w.prizeAmount || 0), 0) : 0;
+        
+        const prizeTotal = l.winners ? l.winners.reduce((s: number, w: any) => {
+          const amount = typeof w.prizeAmount === 'string' 
+            ? parseFloat(w.prizeAmount.replace(/[^0-9.]/g, '')) || 0
+            : Number(w.prizeAmount || 0);
+          return s + amount;
+        }, 0) : 0;
         
         totalGrossRevenue += gross;
         totalPrizes += prizeTotal;
@@ -104,13 +110,13 @@ export class AdminController {
           description: l.description,
           ticketPrice: l.ticketPrice,
           totalTickets: l.totalTickets,
-          soldTickets: l._count.tickets,
+          soldTickets: l._count?.tickets || 0,
           status: l.status,
           createdAt: l.createdAt,
-          prizes: l.prizeDistribution.map((p: any) => ({
-            rank: p.position,
+          prizes: (l.prizeDistribution || []).map((p: any) => ({
+            rank: p.position || 0,
             amount: p.prizeAmount,
-            description: `Rank ${p.position}`
+            description: p.description || `Rank ${p.position}`
           }))
         }))
       };
