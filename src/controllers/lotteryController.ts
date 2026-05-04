@@ -67,7 +67,8 @@ export class LotteryController {
   static async listLotteryWinners(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const winners = await DrawService.getLotteryWinners(id);
+      if (!id) return sendError(res, 400, 'Lottery ID is required');
+      const winners = await DrawService.getLotteryWinners(id as string);
       sendResponse(res, 200, winners);
     } catch (error: any) {
       sendError(res, 500, error.message);
