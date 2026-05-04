@@ -47,7 +47,7 @@ export class LotteryService {
         });
     }
     static async getActiveLotteries() {
-        return await prisma.lottery.findMany({
+        const lotteries = await prisma.lottery.findMany({
             where: {
                 status: LotteryStatus.ACTIVE,
             },
@@ -62,14 +62,29 @@ export class LotteryService {
                 },
                 _count: {
                     select: {
-                        tickets: { where: { status: 'SOLD' } }
+                        tickets: { where: { status: 'SOLD' } },
+                        reservations: { where: { status: 'APPROVED' } }
                     }
                 }
             },
         });
+        // Calculate unique participants for each lottery
+        return await Promise.all(lotteries.map(async (lottery) => {
+            const uniqueParticipants = await prisma.reservation.groupBy({
+                by: ['phone'],
+                where: {
+                    lotteryId: lottery.id,
+                    status: 'APPROVED',
+                },
+            });
+            return {
+                ...lottery,
+                uniqueParticipantCount: uniqueParticipants.length
+            };
+        }));
     }
     static async getLotteryById(id) {
-        return await prisma.lottery.findUnique({
+        const lottery = await prisma.lottery.findUnique({
             where: { id },
             include: {
                 prizeDistribution: true,
@@ -82,11 +97,25 @@ export class LotteryService {
                 },
                 _count: {
                     select: {
-                        tickets: { where: { status: 'SOLD' } }
+                        tickets: { where: { status: 'SOLD' } },
+                        reservations: { where: { status: 'APPROVED' } }
                     }
                 },
             },
         });
+        if (!lottery)
+            return null;
+        const uniqueParticipants = await prisma.reservation.groupBy({
+            by: ['phone'],
+            where: {
+                lotteryId: id,
+                status: 'APPROVED',
+            },
+        });
+        return {
+            ...lottery,
+            uniqueParticipantCount: uniqueParticipants.length
+        };
     }
     static async getLotteryTickets(id) {
         return await prisma.ticket.findMany({

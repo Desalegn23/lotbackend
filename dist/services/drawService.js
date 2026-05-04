@@ -9,8 +9,19 @@ export class DrawService {
                 where: { id: lotteryId },
                 include: { prizeDistribution: true },
             });
-            if (!lottery || lottery.status !== LotteryStatus.ACTIVE) {
-                throw new Error('Lottery not found or not in ACTIVE status');
+            if (!lottery) {
+                throw new Error('Lottery not found');
+            }
+            // If already drawn, return existing winners
+            if (lottery.status === LotteryStatus.COMPLETED) {
+                return await tx.winner.findMany({
+                    where: { lotteryId },
+                    include: { ticket: true },
+                    orderBy: { prizePosition: 'asc' },
+                });
+            }
+            if (lottery.status !== LotteryStatus.ACTIVE) {
+                throw new Error('Lottery is not in ACTIVE status');
             }
             // 2. Get all SOLD tickets
             const soldTickets = await tx.ticket.findMany({
@@ -38,6 +49,8 @@ export class DrawService {
                     ticketId: winningTicket.id,
                     prizePosition: prize.position,
                     prizeAmount: prize.prizeAmount,
+                    prizeType: prize.prizeType,
+                    description: prize.description,
                 });
             }
             // 4. Record winners

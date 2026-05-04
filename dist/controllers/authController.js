@@ -37,12 +37,18 @@ export class AuthController {
     static async signup(req, res) {
         try {
             const { name, email, phone, password } = req.body;
-            if (!name || !email || !password) {
-                return sendError(res, 400, 'name, email and password are required');
+            if (!name || !password || !phone) {
+                return sendError(res, 400, 'name, phone and password are required');
             }
-            const existing = await prisma.user.findUnique({ where: { email } });
-            if (existing) {
-                return sendError(res, 400, 'Email already in use');
+            if (email) {
+                const existing = await prisma.user.findUnique({ where: { email } });
+                if (existing) {
+                    return sendError(res, 400, 'Email already in use');
+                }
+            }
+            const existingPhone = await prisma.user.findFirst({ where: { phone: phone } });
+            if (existingPhone) {
+                return sendError(res, 400, 'Phone number already in use');
             }
             const hashedPassword = await bcrypt.hash(password, 10);
             const user = await prisma.user.create({
@@ -51,7 +57,7 @@ export class AuthController {
             const token = signToken({ id: user.id, role: user.role });
             return sendResponse(res, 201, {
                 token,
-                user: { id: user.id, name: user.name, email: user.email, role: user.role },
+                user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },
             }, 'Account created successfully');
         }
         catch (error) {
@@ -70,9 +76,9 @@ export class AuthController {
      *         application/json:
      *           schema:
      *             type: object
-     *             required: [email, password]
+     *             required: [phone, password]
      *             properties:
-     *               email:    { type: string, format: email }
+     *               phone:    { type: string }
      *               password: { type: string }
      *     responses:
      *       200: { description: Login successful, returns JWT token }
@@ -81,23 +87,23 @@ export class AuthController {
      */
     static async login(req, res) {
         try {
-            const { email, password } = req.body;
-            if (!email || !password) {
-                return sendError(res, 400, 'email and password are required');
+            const { phone, password } = req.body;
+            if (!phone || !password) {
+                return sendError(res, 400, 'phone and password are required');
             }
-            const user = await prisma.user.findUnique({
-                where: { email },
+            const user = await prisma.user.findFirst({
+                where: { phone },
                 include: { agent: true },
             });
             if (!user) {
-                return sendError(res, 400, 'Invalid email or password');
+                return sendError(res, 400, 'Invalid phone or password');
             }
             if (user.status === 'INACTIVE') {
                 return sendError(res, 403, 'Your account has been deactivated. Contact an administrator.');
             }
             const passwordMatch = await bcrypt.compare(password, user.password);
             if (!passwordMatch) {
-                return sendError(res, 400, 'Invalid email or password');
+                return sendError(res, 400, 'Invalid phone or password');
             }
             const token = signToken({ id: user.id, role: user.role });
             return sendResponse(res, 200, {
@@ -106,10 +112,62 @@ export class AuthController {
                     id: user.id,
                     name: user.name,
                     email: user.email,
+                    phone: user.phone,
                     role: user.role,
                     agentId: user.agent?.id ?? null,
                 },
             }, 'Login successful');
+        }
+        catch (error) {
+            return sendError(res, 500, error.message);
+        }
+    }
+    /**
+     * @openapi
+     * /api/auth/change-password:
+     *   post:
+     *     summary: Change current user password
+     *     tags: [Auth]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [oldPassword, newPassword]
+     *             properties:
+     *               oldPassword: { type: string }
+     *               newPassword: { type: string, minLength: 6 }
+     *     responses:
+     *       200: { description: Password changed successfully }
+     *       400: { description: Invalid old password }
+     *       401: { description: Unauthorized }
+     */
+    static async changePassword(req, res) {
+        try {
+            const userId = req.user?.id;
+            const { oldPassword, newPassword } = req.body;
+            if (!oldPassword || !newPassword) {
+                return sendError(res, 400, 'Old password and new password are required');
+            }
+            const user = await prisma.user.findUnique({
+                where: { id: userId },
+            });
+            if (!user) {
+                return sendError(res, 404, 'User not found');
+            }
+            const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+            if (!passwordMatch) {
+                return sendError(res, 400, 'Invalid old password');
+            }
+            const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+            await prisma.user.update({
+                where: { id: userId },
+                data: { password: hashedNewPassword },
+            });
+            return sendResponse(res, 200, null, 'Password changed successfully');
         }
         catch (error) {
             return sendError(res, 500, error.message);
@@ -164,6 +222,10 @@ export class AuthController {
                         },
                         bankName: true,
                         accountNumber: true,
+                        notifyInterval: true,
+                        notifyThreshold: true,
+                        notifyLanguage: true,
+                        customMessage: true,
                         createdAt: true,
                     },
                 });
@@ -217,6 +279,10 @@ export class AuthController {
                     },
                     bankName: true,
                     accountNumber: true,
+                    notifyInterval: true,
+                    notifyThreshold: true,
+                    notifyLanguage: true,
+                    customMessage: true,
                     createdAt: true,
                 },
             });
@@ -287,6 +353,7 @@ export class AuthController {
                     id: user.id,
                     name: user.name,
                     email: user.email,
+                    phone: user.phone,
                     role: user.role,
                     agentId: user?.agent?.id ?? null,
                 },
@@ -365,13 +432,13 @@ export class AuthController {
             if (existingAdmin) {
                 return sendError(res, 400, 'An admin account already exists.');
             }
-            const { name, email, password } = req.body;
-            if (!name || !email || !password) {
-                return sendError(res, 400, 'name, email and password are required');
+            const { name, email, phone, password } = req.body;
+            if (!name || !email || !password || !phone) {
+                return sendError(res, 400, 'name, email, phone and password are required');
             }
             const hashed = await bcrypt.hash(password, 10);
             const admin = await prisma.user.create({
-                data: { name, email, password: hashed, role: 'ADMIN' },
+                data: { name, email, phone, password: hashed, role: 'ADMIN' },
             });
             const token = signToken({ id: admin.id, role: admin.role });
             return sendResponse(res, 201, {

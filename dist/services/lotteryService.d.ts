@@ -10,7 +10,7 @@ export declare class LotteryService {
         status?: LotteryStatus;
         prizes: {
             position: number;
-            amount: number;
+            amount: string | number;
             prizeType?: string;
             description?: string;
         }[];
@@ -38,7 +38,8 @@ export declare class LotteryService {
         drawnAt: Date | null;
         agentId: string;
     }>;
-    static getActiveLotteries(): Promise<({
+    static getActiveLotteries(): Promise<{
+        uniqueParticipantCount: number;
         agent: {
             user: {
                 name: string;
@@ -49,8 +50,14 @@ export declare class LotteryService {
             userId: string;
             accountNumber: string | null;
             bankName: string | null;
+            commissionRate: number;
+            notifyInterval: string;
+            notifyThreshold: number;
+            notifyLanguage: string;
+            customMessage: string | null;
         };
         _count: {
+            reservations: number;
             tickets: number;
         };
         prizeDistribution: {
@@ -61,7 +68,6 @@ export declare class LotteryService {
             prizeType: import("@prisma/client").$Enums.PrizeType | null;
             lotteryId: string;
         }[];
-    } & {
         id: string;
         status: import("@prisma/client").$Enums.LotteryStatus;
         createdAt: Date;
@@ -75,8 +81,9 @@ export declare class LotteryService {
         drawn: boolean;
         drawnAt: Date | null;
         agentId: string;
-    })[]>;
-    static getLotteryById(id: string): Promise<({
+    }[]>;
+    static getLotteryById(id: string): Promise<{
+        uniqueParticipantCount: number;
         agent: {
             user: {
                 name: string;
@@ -87,8 +94,14 @@ export declare class LotteryService {
             userId: string;
             accountNumber: string | null;
             bankName: string | null;
+            commissionRate: number;
+            notifyInterval: string;
+            notifyThreshold: number;
+            notifyLanguage: string;
+            customMessage: string | null;
         };
         _count: {
+            reservations: number;
             tickets: number;
         };
         prizeDistribution: {
@@ -99,7 +112,6 @@ export declare class LotteryService {
             prizeType: import("@prisma/client").$Enums.PrizeType | null;
             lotteryId: string;
         }[];
-    } & {
         id: string;
         status: import("@prisma/client").$Enums.LotteryStatus;
         createdAt: Date;
@@ -113,7 +125,7 @@ export declare class LotteryService {
         drawn: boolean;
         drawnAt: Date | null;
         agentId: string;
-    }) | null>;
+    } | null>;
     static getLotteryTickets(id: string): Promise<{
         id: string;
         status: import("@prisma/client").$Enums.TicketStatus;
@@ -134,6 +146,11 @@ export declare class LotteryService {
                 userId: string;
                 accountNumber: string | null;
                 bankName: string | null;
+                commissionRate: number;
+                notifyInterval: string;
+                notifyThreshold: number;
+                notifyLanguage: string;
+                customMessage: string | null;
             };
             title: string;
         };

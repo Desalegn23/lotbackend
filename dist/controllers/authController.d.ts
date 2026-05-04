@@ -35,9 +35,9 @@ export declare class AuthController {
      *         application/json:
      *           schema:
      *             type: object
-     *             required: [email, password]
+     *             required: [phone, password]
      *             properties:
-     *               email:    { type: string, format: email }
+     *               phone:    { type: string }
      *               password: { type: string }
      *     responses:
      *       200: { description: Login successful, returns JWT token }
@@ -45,6 +45,30 @@ export declare class AuthController {
      *       403: { description: Account is inactive }
      */
     static login(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    /**
+     * @openapi
+     * /api/auth/change-password:
+     *   post:
+     *     summary: Change current user password
+     *     tags: [Auth]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [oldPassword, newPassword]
+     *             properties:
+     *               oldPassword: { type: string }
+     *               newPassword: { type: string, minLength: 6 }
+     *     responses:
+     *       200: { description: Password changed successfully }
+     *       400: { description: Invalid old password }
+     *       401: { description: Unauthorized }
+     */
+    static changePassword(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     /**
      * @openapi
      * /api/auth/me:

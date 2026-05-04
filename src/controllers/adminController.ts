@@ -132,12 +132,26 @@ export class AdminController {
     try {
       const { name, email, phone, password, bankName, accountNumber, commissionRate } = req.body;
 
-      const existingUser = await prisma.user.findUnique({
-        where: { email }
+      if (!phone) {
+        return sendError(res, 400, "Phone number is required");
+      }
+
+      if (email) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email }
+        });
+
+        if (existingUser) {
+          return sendError(res, 400, "Email already exists");
+        }
+      }
+
+      const existingPhone = await prisma.user.findUnique({
+        where: { phone }
       });
 
-      if (existingUser) {
-        return sendError(res, 400, "Email already exists");
+      if (existingPhone) {
+        return sendError(res, 400, "Phone number already exists");
       }
 
       const hashedPassword = await bcrypt.hash(password || "password", 10);
@@ -147,7 +161,7 @@ export class AdminController {
           data: {
             name,
             email,
-            phone: String(phone || ''),
+            phone,
             role: "AGENT",
             password: hashedPassword
           }

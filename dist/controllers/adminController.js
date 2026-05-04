@@ -4,13 +4,25 @@ import bcrypt from "bcrypt";
 import { AdminService } from "../services/adminService.js";
 export class AdminController {
     static mapAgentResponse(a) {
-        let revenue = 0;
+        let totalGrossRevenue = 0;
+        let totalPrizes = 0;
         if (a.lotteries) {
             a.lotteries.forEach((l) => {
-                const prizeTotal = l.winners ? l.winners.reduce((s, w) => s + (w.prizeAmount || 0), 0) : 0;
-                revenue += (l.ticketPrice * l.totalTickets) - prizeTotal;
+                const soldCount = l._count?.tickets || 0;
+                const gross = l.ticketPrice * soldCount;
+                const prizeTotal = l.winners ? l.winners.reduce((s, w) => {
+                    const amount = typeof w.prizeAmount === 'string'
+                        ? parseFloat(w.prizeAmount.replace(/[^0-9.]/g, '')) || 0
+                        : Number(w.prizeAmount || 0);
+                    return s + amount;
+                }, 0) : 0;
+                totalGrossRevenue += gross;
+                totalPrizes += prizeTotal;
             });
         }
+        const netProfit = totalGrossRevenue - totalPrizes;
+        const adminCommission = netProfit * ((a.commissionRate || 10) / 100);
+        const agentNet = netProfit - adminCommission;
         return {
             id: a.id,
             name: a.user.name,
@@ -19,8 +31,12 @@ export class AdminController {
             status: a.user.status,
             bankName: a.bankName || '',
             accountNumber: a.accountNumber || '',
+            commissionRate: a.commissionRate || 10,
             totalLotteries: a.lotteries ? a.lotteries.length : 0,
-            revenueGenerated: revenue,
+            totalRevenue: totalGrossRevenue,
+            totalPrizes: totalPrizes,
+            adminCommission: Math.max(0, adminCommission),
+            agentNet: Math.max(0, agentNet),
             createdAt: a.user.createdAt || a.createdAt
         };
     }
@@ -72,13 +88,13 @@ export class AdminController {
                     description: l.description,
                     ticketPrice: l.ticketPrice,
                     totalTickets: l.totalTickets,
-                    soldTickets: l._count.tickets,
+                    soldTickets: l._count?.tickets || 0,
                     status: l.status,
                     createdAt: l.createdAt,
-                    prizes: l.prizeDistribution.map((p) => ({
-                        rank: p.position,
+                    prizes: (l.prizeDistribution || []).map((p) => ({
+                        rank: p.position || 0,
                         amount: p.prizeAmount,
-                        description: `Rank ${p.position}`
+                        description: p.description || `Rank ${p.position}`
                     }))
                 }))
             };
@@ -90,12 +106,23 @@ export class AdminController {
     }
     static async createAgent(req, res) {
         try {
-            const { name, email, phone, password, bankName, accountNumber } = req.body;
-            const existingUser = await prisma.user.findUnique({
-                where: { email }
+            const { name, email, phone, password, bankName, accountNumber, commissionRate } = req.body;
+            if (!phone) {
+                return sendError(res, 400, "Phone number is required");
+            }
+            if (email) {
+                const existingUser = await prisma.user.findUnique({
+                    where: { email }
+                });
+                if (existingUser) {
+                    return sendError(res, 400, "Email already exists");
+                }
+            }
+            const existingPhone = await prisma.user.findUnique({
+                where: { phone }
             });
-            if (existingUser) {
-                return sendError(res, 400, "Email already exists");
+            if (existingPhone) {
+                return sendError(res, 400, "Phone number already exists");
             }
             const hashedPassword = await bcrypt.hash(password || "password", 10);
             const agent = await prisma.$transaction(async (tx) => {
@@ -103,7 +130,7 @@ export class AdminController {
                     data: {
                         name,
                         email,
-                        phone: String(phone || ''),
+                        phone,
                         role: "AGENT",
                         password: hashedPassword
                     }
@@ -112,7 +139,8 @@ export class AdminController {
                     data: {
                         userId: user.id,
                         bankName: String(bankName || ''),
-                        accountNumber: String(accountNumber || '')
+                        accountNumber: String(accountNumber || ''),
+                        commissionRate: Number(commissionRate || 10)
                     },
                     include: {
                         user: true
@@ -128,12 +156,13 @@ export class AdminController {
     }
     static async updateAgent(req, res) {
         try {
-            const { name, email, phone, status, bankName, accountNumber } = req.body;
+            const { name, email, phone, status, bankName, accountNumber, commissionRate } = req.body;
             const agent = await prisma.agent.update({
                 where: { id: String(req.params.id) },
                 data: {
                     bankName: String(bankName || ''),
                     accountNumber: String(accountNumber || ''),
+                    commissionRate: Number(commissionRate || 10),
                     user: {
                         update: {
                             name,
@@ -421,7 +450,8 @@ export class AdminController {
     static async monitorSystem(req, res) {
         try {
             const summary = await AdminService.getSystemSummary();
-            sendResponse(res, 200, summary);
+            const agentSales = await AdminService.getAgentSalesSummary();
+            sendResponse(res, 200, { ...summary, agentSales });
         }
         catch (error) {
             sendError(res, 500, error.message);
@@ -434,6 +464,25 @@ export class AdminController {
         }
         catch (error) {
             sendError(res, 500, error.message);
+        }
+    }
+    static async updateNotificationSettings(req, res) {
+        try {
+            const userId = req.user?.id;
+            const { notifyInterval, notifyThreshold, notifyLanguage, customMessage } = req.body;
+            const agent = await prisma.agent.update({
+                where: { userId },
+                data: {
+                    notifyInterval,
+                    notifyThreshold: Number(notifyThreshold),
+                    notifyLanguage,
+                    customMessage
+                }
+            });
+            sendResponse(res, 200, agent, "Notification settings updated successfully");
+        }
+        catch (error) {
+            sendError(res, 400, error.message);
         }
     }
 }

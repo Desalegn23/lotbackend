@@ -13,6 +13,7 @@ router.post('/auth/login', AuthController.login);
 router.post('/auth/telegram', AuthController.loginWithTelegram);
 router.post('/auth/telegram/link', authenticate, AuthController.linkTelegram);
 router.get('/auth/me', authenticate, AuthController.me);
+router.post('/auth/change-password', authenticate, AuthController.changePassword);
 router.post('/auth/bootstrap-admin', AuthController.bootstrapAdmin); // one-time setup, remove in prod
 // ─────────────────────────────────────────────
 // PUBLIC ROUTES
@@ -38,6 +39,7 @@ router.get('/agent/summary', authenticate, agentOnly, LotteryController.getMySta
 router.get('/agent/winners', authenticate, agentOnly, LotteryController.listMyWinners);
 router.get('/agent/lotteries/:id/tickets', authenticate, agentOnly, LotteryController.getMyLotteryTickets);
 router.get('/agent/lotteries/:id/winners', authenticate, agentOnly, LotteryController.getMyLotteryWinners);
+router.put('/agent/notification-settings', authenticate, agentOnly, AdminController.updateNotificationSettings);
 // ─────────────────────────────────────────────
 // ADMIN ROUTES (JWT required, role: ADMIN only)
 // ─────────────────────────────────────────────

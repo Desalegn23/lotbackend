@@ -15,6 +15,7 @@ router.post('/auth/login', AuthController.login);
 router.post('/auth/telegram', AuthController.loginWithTelegram);
 router.post('/auth/telegram/link', authenticate, AuthController.linkTelegram);
 router.get('/auth/me', authenticate, AuthController.me);
+router.post('/auth/change-password', authenticate, AuthController.changePassword);
 router.post('/auth/bootstrap-admin', AuthController.bootstrapAdmin); // one-time setup, remove in prod
 
 
@@ -24,6 +25,7 @@ router.post('/auth/bootstrap-admin', AuthController.bootstrapAdmin); // one-time
 router.get('/lotteries', LotteryController.list);
 router.get('/lotteries/:id', LotteryController.getById);
 router.get('/lotteries/:id/tickets', LotteryController.getTickets);
+router.get('/lotteries/:id/winners', LotteryController.listLotteryWinners);
 router.get('/winners', LotteryController.listWinners);
 router.post('/reservations', authenticateOptional, ReservationController.reserve);
 router.get('/user/reservations', authenticate, ReservationController.listUserTickets);

@@ -6,14 +6,23 @@ export class ReservationService {
         if (!data.name || data.name.trim() === '') {
             throw new Error('Name is required for reservation');
         }
-        if (!data.email || data.email.trim() === '') {
-            throw new Error('Email is required for reservation');
-        }
+        // Email is now optional, so we remove the validation check for it
         if (!data.phone || data.phone.trim() === '') {
             throw new Error('Phone number is required for reservation');
         }
     }
     static async createPublicReservation(data) {
+        // If authenticated, pre-fill missing info from user profile
+        if (data.userId) {
+            const user = await prisma.user.findUnique({
+                where: { id: data.userId }
+            });
+            if (user) {
+                data.name = data.name || user.name;
+                data.email = data.email || user.email || '';
+                data.phone = data.phone || user.phone || '';
+            }
+        }
         this.validateReservationData(data);
         return await prisma.$transaction(async (tx) => {
             // 1. Verify tickets are available
