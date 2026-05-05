@@ -25,9 +25,10 @@ model Agent {
   id            String    @id @default(uuid())
   userId        String    @unique
   createdAt     DateTime  @default(now())
-  accountNumber String?
-  bankName      String?
   commissionRate Float     @default(10.0) // Admin's % cut of the profit
+  
+  // Payment Methods
+  paymentOptions PaymentOption[]
   
   // Notification Settings
   notifyInterval  String    @default("4H") // DISABLED, 2H, 4H, 12H, DAILY
@@ -38,6 +39,16 @@ model Agent {
   user          User            @relation(fields: [userId], references: [id])
   lotteries     Lottery[]
   telegramGroups TelegramGroup[]
+}
+
+model PaymentOption {
+  id            String  @id @default(uuid())
+  agentId       String
+  methodName    String  // e.g., "Telebirr", "CBE"
+  accountNumber String
+  accountName   String? // Name on the account
+  instructions  String? // Optional notes for the user
+  agent         Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
 }
 
 model Lottery {

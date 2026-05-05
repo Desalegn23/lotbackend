@@ -47,8 +47,7 @@ export class AdminController {
       email: a.user.email,
       phone: a.user.phone || '',
       status: a.user.status,
-      bankName: a.bankName || '',
-      accountNumber: a.accountNumber || '',
+      paymentOptions: a.paymentOptions || [],
       commissionRate: a.commissionRate || 10,
       totalLotteries: a.lotteries ? a.lotteries.length : 0,
       totalRevenue: totalGrossRevenue,
@@ -64,6 +63,7 @@ export class AdminController {
       const agents = await prisma.agent.findMany({
         include: {
           user: true,
+          paymentOptions: true,
           lotteries: {
             include: {
               winners: true
@@ -86,6 +86,7 @@ export class AdminController {
         where: { id: String(id) },
         include: {
           user: true,
+          paymentOptions: true,
           lotteries: {
             include: {
               winners: true,
@@ -130,7 +131,7 @@ export class AdminController {
 
   static async createAgent(req: Request, res: Response) {
     try {
-      const { name, email, phone, password, bankName, accountNumber, commissionRate } = req.body;
+      const { name, email, phone, password, commissionRate, paymentOptions } = req.body;
 
       if (!phone) {
         return sendError(res, 400, "Phone number is required");
@@ -170,12 +171,19 @@ export class AdminController {
         return tx.agent.create({
           data: {
             userId: user.id,
-            bankName: String(bankName || ''),
-            accountNumber: String(accountNumber || ''),
-            commissionRate: Number(commissionRate || 10)
+            commissionRate: Number(commissionRate || 10),
+            paymentOptions: {
+              create: (paymentOptions || []).map((p: any) => ({
+                methodName: p.methodName,
+                accountNumber: p.accountNumber,
+                accountName: p.accountName,
+                instructions: p.instructions
+              }))
+            }
           },
           include: {
-            user: true
+            user: true,
+            paymentOptions: true
           }
         });
       });
@@ -190,13 +198,11 @@ export class AdminController {
 
   static async updateAgent(req: Request, res: Response) {
     try {
-      const { name, email, phone, status, bankName, accountNumber, commissionRate } = req.body;
+      const { name, email, phone, status, commissionRate, paymentOptions } = req.body;
 
       const agent = await prisma.agent.update({
         where: { id: String(req.params.id) },
         data: {
-          bankName: String(bankName || ''),
-          accountNumber: String(accountNumber || ''),
           commissionRate: Number(commissionRate || 10),
           user: {
             update: {
@@ -205,9 +211,20 @@ export class AdminController {
               phone: String(phone || ''),
               status
             }
+          },
+          // Update payment options: delete old ones and create new ones for simplicity
+          // Or use a more complex sync logic if needed
+          paymentOptions: {
+            deleteMany: {},
+            create: (paymentOptions || []).map((p: any) => ({
+              methodName: p.methodName,
+              accountNumber: p.accountNumber,
+              accountName: p.accountName,
+              instructions: p.instructions
+            }))
           }
         },
-        include: { user: true }
+        include: { user: true, paymentOptions: true }
       });
 
       const mappedAgent = AdminController.mapAgentResponse(agent);
