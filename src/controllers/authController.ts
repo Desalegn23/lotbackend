@@ -499,4 +499,59 @@ export class AuthController {
       return sendError(res, 500, error.message);
     }
   }
+
+  /**
+   * @openapi
+   * /api/agent/profile:
+   *   put:
+   *     summary: Update agent profile details (e.g. payment methods)
+   *     tags: [Agent]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               paymentOptions:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     methodName: { type: string }
+   *                     accountNumber: { type: string }
+   *                     accountName: { type: string }
+   *                     instructions: { type: string }
+   *     responses:
+   *       200: { description: Agent profile updated successfully }
+   *       401: { description: Unauthorized }
+   *       500: { description: Server error }
+   */
+  static async updateAgentProfile(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+      const { paymentOptions } = req.body;
+
+      await prisma.agent.update({
+        where: { userId },
+        data: {
+          paymentOptions: {
+            deleteMany: {},
+            create: (paymentOptions || []).map((p: any) => ({
+              methodName: p.methodName,
+              accountNumber: p.accountNumber,
+              accountName: p.accountName,
+              instructions: p.instructions
+            }))
+          }
+        }
+      });
+
+      return sendResponse(res, 200, null, 'Agent profile updated successfully');
+    } catch (error: any) {
+      return sendError(res, 500, error.message);
+    }
+  }
 }
