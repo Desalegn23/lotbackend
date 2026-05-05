@@ -246,8 +246,7 @@ export class AuthController {
                 status: true,
               }
             },
-            bankName: true,
-            accountNumber: true,
+            paymentOptions: true,
             notifyInterval: true,
             notifyThreshold: true,
             notifyLanguage: true,
