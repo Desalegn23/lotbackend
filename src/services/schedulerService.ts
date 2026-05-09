@@ -99,8 +99,7 @@ export class SchedulerService {
             }
           },
           prizeDistribution: {
-            orderBy: { position: 'asc' },
-            take: 1
+            orderBy: { position: 'asc' }
           }
         }
       });
@@ -160,7 +159,12 @@ export class SchedulerService {
         // 4. Construct Message based on Language
         const lang = notifyLanguage;
         const remainingNums = lottery.tickets.map(t => t.ticketNumber).join(', ');
-        const topPrize = lottery.prizeDistribution[0]?.prizeAmount || (lang === 'AM' ? 'ታላላቅ ሽልማቶች' : 'Amazing prizes');
+        
+        const prizeList = lottery.prizeDistribution.map(p => {
+          const suffix = lang === 'AM' ? 'ኛ' : (p.position === 1 ? 'st' : p.position === 2 ? 'nd' : p.position === 3 ? 'rd' : 'th');
+          return `${p.position}${suffix}: ${p.prizeAmount}`;
+        }).join(', ');
+        const prizeDisplay = prizeList || (lang === 'AM' ? 'ታላላቅ ሽልማቶች' : 'Amazing prizes');
 
         // 5. Construct Holders list if enabled
         let holdersText = "";
@@ -179,7 +183,7 @@ export class SchedulerService {
             .replace('{title}', lottery.title)
             .replace('{count}', availableCount.toString())
             .replace('{price}', lottery.ticketPrice.toString())
-            .replace('{prize}', topPrize)
+            .replace('{prize}', prizeDisplay)
             .replace('{numbers}', remainingNums)
             .replace('{holders}', holdersText.trim()); // Remove extra newlines if used as tag
         } else if (lang === 'AM') {
@@ -187,14 +191,14 @@ export class SchedulerService {
           message = `🔥 <b>ፈጥነው ይውሰዱ! የቀሩት ${availableCount} ቲኬቶች ብቻ ናቸው!</b> 🔥\n\n` +
             `<b>${lottery.title}</b>\n` +
             `ያልተያዙ ቁጥሮች: ${remainingNums}\n\n` +
-            `በ <b>${lottery.ticketPrice} ብር</b> ብቻ የ <b>${topPrize}</b> ባለዕድል ይሁኑ!\n` +
+            `በ <b>${lottery.ticketPrice} ብር</b> ብቻ የ <b>${prizeDisplay}</b> ባለዕድል ይሁኑ!\n` +
             `አሁኑኑ ይሞክሩ! 🍀` + holdersText;
         } else {
           // Default English
           message = `🔥 <b>HURRY! ONLY ${availableCount} TICKETS LEFT!</b> 🔥\n\n` +
             `<b>${lottery.title}</b>\n` +
             `Remaining numbers: ${remainingNums}\n\n` +
-            `For just <b>ETB ${lottery.ticketPrice}</b> per ticket, who will win <b>${topPrize}</b>?\n` +
+            `For just <b>ETB ${lottery.ticketPrice}</b> per ticket, who will win <b>${prizeDisplay}</b>?\n` +
             `Try your luck now! 🍀` + holdersText;
         }
 
