@@ -604,7 +604,7 @@ export class AdminController {
       const { notifyInterval, notifyThreshold, notifyLanguage, notifyShowHolders, customMessage } = req.body;
 
       const lottery = await prisma.lottery.update({
-        where: { id },
+        where: { id: id as string },
         data: {
           notifyInterval,
           notifyThreshold: (notifyThreshold !== undefined && notifyThreshold !== null) ? Number(notifyThreshold) : null,
