@@ -73,7 +73,8 @@ export class LotteryService {
           include: {
             user: {
               select: { name: true }
-            }
+            },
+            paymentOptions: true
           }
         },
         _count: {
@@ -111,7 +112,8 @@ export class LotteryService {
           include: {
             user: {
               select: { name: true }
-            }
+            },
+            paymentOptions: true
           }
         },
         _count: {

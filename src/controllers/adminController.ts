@@ -349,7 +349,8 @@ export class AdminController {
         include: {
           agent: {
             include: {
-              user: true
+              user: true,
+              paymentOptions: true
             }
           },
           prizeDistribution: true,
@@ -380,7 +381,8 @@ export class AdminController {
         include: {
           agent: {
             include: {
-              user: true
+              user: true,
+              paymentOptions: true
             }
           },
           prizeDistribution: true,
