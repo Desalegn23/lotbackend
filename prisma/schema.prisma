@@ -34,6 +34,7 @@ model Agent {
   notifyInterval  String    @default("4H") // DISABLED, 1M, 5M, 15M, 30M, 1H, 2H, 4H, 12H, DAILY
   notifyThreshold Int       @default(20)   // Percentage of tickets remaining
   notifyLanguage  String    @default("EN") // EN, AM
+  notifyShowHolders Boolean @default(false) // Whether to list reservers in notifications
   customMessage   String?   // Custom Amharic/English message template
   
   user          User            @relation(fields: [userId], references: [id])

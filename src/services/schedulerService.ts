@@ -85,6 +85,14 @@ export class SchedulerService {
             take: 10,
             select: { ticketNumber: true }
           },
+          reservations: {
+            where: { status: { in: ['APPROVED', 'PENDING'] } },
+            include: {
+              tickets: {
+                include: { ticket: { select: { ticketNumber: true } } }
+              }
+            }
+          },
           _count: {
             select: {
               tickets: { where: { status: 'AVAILABLE' } }
@@ -149,6 +157,16 @@ export class SchedulerService {
         const remainingNums = lottery.tickets.map(t => t.ticketNumber).join(', ');
         const topPrize = lottery.prizeDistribution[0]?.prizeAmount || (lang === 'AM' ? 'ታላላቅ ሽልማቶች' : 'Amazing prizes');
 
+        // 5. Construct Holders list if enabled
+        let holdersText = "";
+        if ((agent as any).notifyShowHolders && (lottery as any).reservations?.length > 0) {
+          const list = (lottery as any).reservations.map((r: any) => {
+            const ticketNums = r.tickets.map((rt: any) => `#${rt.ticket.ticketNumber}`).join(', ');
+            return `👤 ${r.name} (${ticketNums})`;
+          }).join(', ');
+          holdersText = lang === 'AM' ? `\n\n📝 <b>የተያዙ ቲኬቶች:</b>\n${list}` : `\n\n📝 <b>Ticket Holders:</b>\n${list}`;
+        }
+
         let message = "";
         if (agent.customMessage) {
           // Use custom template if provided
@@ -157,21 +175,22 @@ export class SchedulerService {
             .replace('{count}', availableCount.toString())
             .replace('{price}', lottery.ticketPrice.toString())
             .replace('{prize}', topPrize)
-            .replace('{numbers}', remainingNums);
+            .replace('{numbers}', remainingNums)
+            .replace('{holders}', holdersText.trim()); // Remove extra newlines if used as tag
         } else if (lang === 'AM') {
           // Default Amharic
           message = `🔥 <b>ፈጥነው ይውሰዱ! የቀሩት ${availableCount} ቲኬቶች ብቻ ናቸው!</b> 🔥\n\n` +
             `<b>${lottery.title}</b>\n` +
             `ያልተያዙ ቁጥሮች: ${remainingNums}${availableCount > 10 ? '...' : ''}\n\n` +
             `በ <b>${lottery.ticketPrice} ብር</b> ብቻ የ <b>${topPrize}</b> ባለዕድል ይሁኑ!\n` +
-            `አሁኑኑ ይሞክሩ! 🍀`;
+            `አሁኑኑ ይሞክሩ! 🍀` + holdersText;
         } else {
           // Default English
           message = `🔥 <b>HURRY! ONLY ${availableCount} TICKETS LEFT!</b> 🔥\n\n` +
             `<b>${lottery.title}</b>\n` +
             `Remaining numbers: ${remainingNums}${availableCount > 10 ? '...' : ''}\n\n` +
             `For just <b>ETB ${lottery.ticketPrice}</b> per ticket, who will win <b>${topPrize}</b>?\n` +
-            `Try your chance now! 🍀`;
+            `Try your chance now! 🍀` + holdersText;
         }
 
         await NotificationService.sendToAgentGroups(lottery.agentId, message);
