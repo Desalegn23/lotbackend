@@ -83,7 +83,6 @@ export class SchedulerService {
           tickets: {
             where: { status: 'AVAILABLE' },
             orderBy: { ticketNumber: 'asc' },
-            take: 10,
             select: { ticketNumber: true }
           },
           reservations: {
@@ -187,14 +186,14 @@ export class SchedulerService {
           // Default Amharic
           message = `🔥 <b>ፈጥነው ይውሰዱ! የቀሩት ${availableCount} ቲኬቶች ብቻ ናቸው!</b> 🔥\n\n` +
             `<b>${lottery.title}</b>\n` +
-            `ያልተያዙ ቁጥሮች: ${remainingNums}${availableCount > 10 ? '...' : ''}\n\n` +
+            `ያልተያዙ ቁጥሮች: ${remainingNums}\n\n` +
             `በ <b>${lottery.ticketPrice} ብር</b> ብቻ የ <b>${topPrize}</b> ባለዕድል ይሁኑ!\n` +
             `አሁኑኑ ይሞክሩ! 🍀` + holdersText;
         } else {
           // Default English
           message = `🔥 <b>HURRY! ONLY ${availableCount} TICKETS LEFT!</b> 🔥\n\n` +
             `<b>${lottery.title}</b>\n` +
-            `Remaining numbers: ${remainingNums}${availableCount > 10 ? '...' : ''}\n\n` +
+            `Remaining numbers: ${remainingNums}\n\n` +
             `For just <b>ETB ${lottery.ticketPrice}</b> per ticket, who will win <b>${topPrize}</b>?\n` +
             `Try your luck now! 🍀` + holdersText;
         }

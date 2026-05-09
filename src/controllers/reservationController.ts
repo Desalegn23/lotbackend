@@ -43,6 +43,9 @@ export class ReservationController {
       // Notify user about approval
       NotificationService.notifyReservationApproved(reservationId).catch(console.error);
 
+      // Notify Telegram groups for social proof
+      NotificationService.notifyPublicSale(reservationId).catch(console.error);
+
       sendResponse(res, 200, null, 'Reservation approved');
     } catch (error: any) {
       sendError(res, 400, error.message);

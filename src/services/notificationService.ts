@@ -251,4 +251,54 @@ export class NotificationService {
       console.error(`Failed to send message to group ${chatId}`, e);
     }
   }
+
+  static async notifyPublicSale(reservationId: string) {
+    try {
+      const reservation = await prisma.reservation.findUnique({
+        where: { id: reservationId },
+        include: {
+          lottery: {
+            include: {
+              _count: { select: { tickets: { where: { status: 'AVAILABLE' } } } },
+              agent: true
+            }
+          },
+          tickets: { include: { ticket: true } }
+        }
+      });
+
+      if (!reservation) return;
+      const { lottery } = reservation;
+      
+      const lang = lottery.notifyLanguage || lottery.agent.notifyLanguage || 'EN';
+      const ticketNumbers = reservation.tickets.map(t => `#${t.ticket.ticketNumber}`).join(', ');
+      // @ts-ignore
+      const remainingCount = lottery._count?.tickets || 0;
+      
+      let message = "";
+      if (lang === 'AM') {
+        message = `🔥 <b>አዲስ ቲኬት ተሸጧል!</b> 🔥\n\n` +
+          `👤 <b>${reservation.name}</b> ${ticketNumbers} ቁጥሮችን ለ <b>${lottery.title}</b> ወስደዋል!\n\n` +
+          `አሁን የቀሩት <b>${remainingCount}</b> ቲኬቶች ብቻ ናቸው! 🍀`;
+      } else {
+        message = `🔥 <b>New Tickets Secured!</b> 🔥\n\n` +
+          `👤 <b>${reservation.name}</b> just secured tickets ${ticketNumbers} for <b>${lottery.title}</b>!\n\n` +
+          `Only <b>${remainingCount}</b> tickets left! 🍀`;
+      }
+
+      const btnText = lang === 'AM' ? "🍀 አሁኑኑ ዕድልዎን ይሞክሩ" : "🍀 Try your luck now";
+      const markup = Markup.inlineKeyboard([
+        [Markup.button.url(btnText, this.getDeepLink(`lottery_${lottery.id}`))]
+      ]);
+
+      const targetGroupId = (lottery as any).telegramGroupId;
+      if (targetGroupId) {
+        await this.sendToGroup(targetGroupId, message, markup);
+      } else {
+        await this.sendToAgentGroups(lottery.agentId, message, markup);
+      }
+    } catch (e) {
+      console.error('Failed notifyPublicSale', e);
+    }
+  }
 }
