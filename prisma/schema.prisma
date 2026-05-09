@@ -31,7 +31,7 @@ model Agent {
   paymentOptions PaymentOption[]
   
   // Notification Settings
-  notifyInterval  String    @default("4H") // DISABLED, 2H, 4H, 12H, DAILY
+  notifyInterval  String    @default("4H") // DISABLED, 1M, 5M, 15M, 30M, 1H, 2H, 4H, 12H, DAILY
   notifyThreshold Int       @default(20)   // Percentage of tickets remaining
   notifyLanguage  String    @default("EN") // EN, AM
   customMessage   String?   // Custom Amharic/English message template

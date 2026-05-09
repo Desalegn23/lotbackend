@@ -10,8 +10,8 @@ export class SchedulerService {
       await this.sendDailyAgentSummaries();
     });
 
-    // Urgency/Marketing scan — every hour
-    cron.schedule('0 * * * *', async () => {
+    // Urgency/Marketing scan — every minute
+    cron.schedule('* * * * *', async () => {
       console.log('[CRON] Running urgency marketing scan...');
       await this.sendUrgencyMarketingMessages();
     });
@@ -106,11 +106,33 @@ export class SchedulerService {
 
         // 2. Check Interval (Heuristic)
         let shouldNotify = false;
-        if (agent.notifyInterval === '2H' && currentHour % 2 === 0) shouldNotify = true;
-        else if (agent.notifyInterval === '4H' && currentHour % 4 === 0) shouldNotify = true;
-        else if (agent.notifyInterval === '12H' && currentHour % 12 === 0) shouldNotify = true;
-        else if (agent.notifyInterval === 'DAILY' && currentHour === 20) shouldNotify = true;
-        else if (!['2H', '4H', '12H', 'DAILY'].includes(agent.notifyInterval)) shouldNotify = true; // Default/Unknown
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const interval = agent.notifyInterval;
+
+        if (interval === '1M') {
+          shouldNotify = true;
+        } else if (interval === '5M' && currentMinute % 5 === 0) {
+          shouldNotify = true;
+        } else if (interval === '15M' && currentMinute % 15 === 0) {
+          shouldNotify = true;
+        } else if (interval === '30M' && currentMinute % 30 === 0) {
+          shouldNotify = true;
+        } else if (interval === '1H' && currentMinute === 0) {
+          shouldNotify = true;
+        } else if (interval === '2H' && currentMinute === 0 && currentHour % 2 === 0) {
+          shouldNotify = true;
+        } else if (interval === '4H' && currentMinute === 0 && currentHour % 4 === 0) {
+          shouldNotify = true;
+        } else if (interval === '12H' && currentMinute === 0 && currentHour % 12 === 0) {
+          shouldNotify = true;
+        } else if (interval === 'DAILY' && currentMinute === 0 && currentHour === 20) {
+          shouldNotify = true;
+        } else if (!['1M', '5M', '15M', '30M', '1H', '2H', '4H', '12H', 'DAILY'].includes(interval)) {
+          // Default/Unknown - run hourly as fallback if it happens to be at minute 0
+          if (currentMinute === 0) shouldNotify = true;
+        }
 
         if (!shouldNotify) continue;
 
