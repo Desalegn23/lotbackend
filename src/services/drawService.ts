@@ -116,7 +116,6 @@ export class DrawService {
         // Notify each winner individually
         for (const w of winnerRecords) {
           if (!w.ticket.reservedBy) continue;
-          // Find the user who reserved this ticket
           const reservationTicket = await tx.reservationTicket.findFirst({
             where: { 
               ticketId: w.ticketId,
@@ -128,7 +127,7 @@ export class DrawService {
           if (reservationTicket?.reservation?.user?.telegramId) {
              await NotificationService.sendToUser(
                reservationTicket.reservation.user.telegramId,
-               `🎉 <b>CONGRATULATIONS!</b> 🎉\nYou won <b>${w.prizeAmount}</b> in the <b>${lottery.title}</b> draw! Ticket #${w.ticket.ticketNumber}`
+               `🎉 <b>እንኳን ደስ አለዎት!</b> 🎉\nበ <b>${lottery.title}</b> ዕጣ <b>${w.prizeAmount}</b> አሸንፈዋል! ቲኬት #${w.ticket.ticketNumber}`
              );
           }
         }
@@ -137,18 +136,23 @@ export class DrawService {
         if (agentWithUser?.user?.telegramId) {
           await NotificationService.sendToUser(
             agentWithUser.user.telegramId,
-            `🏆 <b>Draw Complete!</b>\nThe draw for <b>${lottery.title}</b> is finished. ${winnerRecords.length} winner(s) selected.`
+            `🏆 <b>ዕጣው ተጠናቋል!</b>\nየ <b>${lottery.title}</b> ዕጣ ተከናውኗል። ${winnerRecords.length} አሸናፊ(ዎች) ተለይተዋል።`
           );
         }
 
-        // Broadcast winner announcement to agent groups
+        // Broadcast winner announcement to groups
         const winnerList = winnerRecords.map(w =>
-          `#${w.prizePosition} — Ticket #${w.ticket.ticketNumber} wins ${w.prizeAmount}`
+          `${w.prizePosition}ኛ — ቲኬት #${w.ticket.ticketNumber} ${w.prizeAmount} አሸንፏል`
         ).join('\n');
-        await NotificationService.sendToAgentGroups(
-          lottery.agentId,
-          `🏆 <b>WE HAVE A WINNER!</b> 🏆\n\n<b>${lottery.title}</b> draw results:\n${winnerList}\n\nCongratulations to the winners! Next round starts soon.`
-        );
+        
+        const announcement = `🏆 <b>አሸናፊዎች ታውቀዋል!</b> 🏆\n\nየ <b>${lottery.title}</b> ዕጣ ውጤቶች:\n${winnerList}\n\nለአሸናፊዎች እንኳን ደስ አላችሁ! ቀጣዩ ዙር በቅርቡ ይጀምራል።`;
+        
+        const targetGroupId = (lottery as any).telegramGroupId;
+        if (targetGroupId) {
+          await NotificationService.sendToGroup(targetGroupId, announcement);
+        } else {
+          await NotificationService.sendToAgentGroups(lottery.agentId, announcement);
+        }
       } catch (e) {
         console.error('Failed to send draw notifications', e);
       }

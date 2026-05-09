@@ -286,16 +286,16 @@ export class NotificationService {
           `Only <b>${remainingCount}</b> tickets left! 🍀`;
       }
 
-      const btnText = lang === 'AM' ? "🍀 አሁኑኑ ዕድልዎን ይሞክሩ" : "🍀 Try your luck now";
+      const targetGroupId = (lottery as any).telegramGroupId;
+      const btnText = lang === 'AM' ? "🍀 አሁኑኑ ይጫወቱ" : "🍀 Play Now";
       const markup = Markup.inlineKeyboard([
-        [Markup.button.url(btnText, this.getDeepLink(`lottery_${lottery.id}`))]
+        [Markup.button.url(btnText, NotificationService.getDeepLink(`lottery_${lottery.id}`))]
       ]);
 
-      const targetGroupId = (lottery as any).telegramGroupId;
       if (targetGroupId) {
-        await this.sendToGroup(targetGroupId, message, markup);
+        await NotificationService.sendToGroup(targetGroupId, message, markup);
       } else {
-        await this.sendToAgentGroups(lottery.agentId, message, markup);
+        await NotificationService.sendToAgentGroups(lottery.agentId, message, markup);
       }
     } catch (e) {
       console.error('Failed notifyPublicSale', e);

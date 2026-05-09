@@ -203,7 +203,7 @@ export class SchedulerService {
         }
 
         const targetGroupId = (lottery as any).telegramGroupId;
-        const btnText = lang === 'AM' ? "🍀 አሁኑኑ ዕድልዎን ይሞክሩ" : "🍀 Try your luck now";
+        const btnText = lang === 'AM' ? "🍀 አሁኑኑ ይጫወቱ" : "🍀 Play Now";
         const markup = Markup.inlineKeyboard([
           [Markup.button.url(btnText, NotificationService.getDeepLink(`lottery_${lottery.id}`))]
         ]);
