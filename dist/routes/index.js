@@ -21,6 +21,7 @@ router.post('/auth/bootstrap-admin', AuthController.bootstrapAdmin); // one-time
 router.get('/lotteries', LotteryController.list);
 router.get('/lotteries/:id', LotteryController.getById);
 router.get('/lotteries/:id/tickets', LotteryController.getTickets);
+router.get('/lotteries/:id/winners', LotteryController.listLotteryWinners);
 router.get('/winners', LotteryController.listWinners);
 router.post('/reservations', authenticateOptional, ReservationController.reserve);
 router.get('/user/reservations', authenticate, ReservationController.listUserTickets);
@@ -35,11 +36,13 @@ router.post('/agent/lotteries/:id/draw', authenticate, agentOnly, LotteryControl
 router.get('/agent/lotteries', authenticate, agentOnly, LotteryController.listMyLotteries);
 router.get('/agent/reservations', authenticate, agentOnly, ReservationController.listMyReservations);
 router.get('/agent/profile', authenticate, agentOnly, AuthController.getAgentProfile);
+router.put('/agent/profile', authenticate, agentOnly, AuthController.updateAgentProfile);
 router.get('/agent/summary', authenticate, agentOnly, LotteryController.getMyStats);
 router.get('/agent/winners', authenticate, agentOnly, LotteryController.listMyWinners);
 router.get('/agent/lotteries/:id/tickets', authenticate, agentOnly, LotteryController.getMyLotteryTickets);
 router.get('/agent/lotteries/:id/winners', authenticate, agentOnly, LotteryController.getMyLotteryWinners);
 router.put('/agent/notification-settings', authenticate, agentOnly, AdminController.updateNotificationSettings);
+router.put('/agent/lotteries/:id/notification-settings', authenticate, agentOnly, AdminController.updateLotteryNotificationSettings);
 // ─────────────────────────────────────────────
 // ADMIN ROUTES (JWT required, role: ADMIN only)
 // ─────────────────────────────────────────────

@@ -198,12 +198,17 @@ export class SchedulerService {
             `Try your chance now! 🍀` + holdersText;
         }
 
-        await NotificationService.sendToAgentGroups(lottery.agentId, message);
+        const targetGroupId = (lottery as any).telegramGroupId;
+        if (targetGroupId) {
+          await NotificationService.sendToGroup(targetGroupId, message);
+        } else {
+          await NotificationService.sendToAgentGroups(lottery.agentId, message);
+        }
 
         // Also notify the agent personally if capacity is low
         if (agent.user?.telegramId) {
           const personalMsg = lang === 'AM'
-            ? `⚠️ <b>ቲኬቶች ሊያልቁ ነው!</b>\n<b>${lottery.title}</b> የቀሩት <b>${availableCount}</b> ቲኬቶች ብቻ ናቸው (${Math.round(percentRemaining)}%)።`
+            ? `⚠️ <b>ቲኬቶች ሊያልቁ ነው!</b>\n<b>${lottery.title}</b> የቀሩት <b>${availableCount}</b> ቲኬቶች ብቻ ናቸው (${Math.round(percentRemaining)}%)。`
             : `⚠️ <b>Almost Sold Out!</b>\n<b>${lottery.title}</b> has only <b>${availableCount}</b> tickets remaining (${Math.round(percentRemaining)}%).`;
             
           await NotificationService.sendToUser(agent.user.telegramId, personalMsg);

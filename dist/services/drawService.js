@@ -2,21 +2,35 @@ import prisma from '../db/prisma.js';
 import { LotteryStatus, TicketStatus } from '@prisma/client';
 import { NotificationService } from './notificationService.js';
 export class DrawService {
-    static async drawWinners(lotteryId) {
+    static async drawWinners(lotteryId, agentUserId) {
         return await prisma.$transaction(async (tx) => {
             // 1. Get lottery and prize distribution
             const lottery = await tx.lottery.findUnique({
                 where: { id: lotteryId },
-                include: { prizeDistribution: true },
+                include: {
+                    prizeDistribution: true,
+                    agent: true
+                },
             });
             if (!lottery) {
                 throw new Error('Lottery not found');
             }
-            // If already drawn, return existing winners
-            if (lottery.status === LotteryStatus.COMPLETED) {
+            // 1.1 Authorization check (only if agentUserId is provided)
+            if (agentUserId && lottery.agent.userId !== agentUserId) {
+                throw new Error('Unauthorized: You do not own this lottery');
+            }
+            // 1.2 If already drawn, return existing winners
+            if (lottery.status === LotteryStatus.COMPLETED || lottery.drawn) {
                 return await tx.winner.findMany({
                     where: { lotteryId },
-                    include: { ticket: true },
+                    include: {
+                        ticket: true,
+                        lottery: {
+                            include: {
+                                agent: { include: { user: { select: { name: true } } } }
+                            }
+                        }
+                    },
                     orderBy: { prizePosition: 'asc' },
                 });
             }
@@ -57,37 +71,51 @@ export class DrawService {
             await tx.winner.createMany({
                 data: winners,
             });
-            // 5. Mark lottery as COMPLETED
+            // 5. Mark lottery as COMPLETED and record drawn status
             await tx.lottery.update({
                 where: { id: lotteryId },
-                data: { status: LotteryStatus.COMPLETED },
+                data: {
+                    status: LotteryStatus.COMPLETED,
+                    drawn: true,
+                    drawnAt: new Date()
+                },
             });
             // 6. Fetch full winner details to return
             const winnerRecords = await tx.winner.findMany({
                 where: { lotteryId },
-                include: { ticket: true },
+                include: {
+                    ticket: true,
+                    lottery: {
+                        include: {
+                            agent: { include: { user: { select: { name: true } } } }
+                        }
+                    }
+                },
                 orderBy: { prizePosition: 'asc' },
             });
             // 7. Send notifications
             try {
+                const agentWithUser = await tx.agent.findUnique({
+                    where: { id: lottery.agentId },
+                    include: { user: true }
+                });
                 // Notify each winner individually
                 for (const w of winnerRecords) {
                     if (!w.ticket.reservedBy)
                         continue;
                     // Find the user who reserved this ticket
-                    const reservation = await tx.reservationTicket.findFirst({
-                        where: { ticketId: w.ticketId },
+                    const reservationTicket = await tx.reservationTicket.findFirst({
+                        where: {
+                            ticketId: w.ticketId,
+                            reservation: { status: 'APPROVED' }
+                        },
                         include: { reservation: { include: { user: true } } }
                     });
-                    if (reservation?.reservation?.user?.telegramId) {
-                        await NotificationService.sendToUser(reservation.reservation.user.telegramId, `🎉 <b>CONGRATULATIONS!</b> 🎉\nYou won <b>${w.prizeAmount}</b> in the <b>${lottery.title}</b> draw! Ticket #${w.ticket.ticketNumber}`);
+                    if (reservationTicket?.reservation?.user?.telegramId) {
+                        await NotificationService.sendToUser(reservationTicket.reservation.user.telegramId, `🎉 <b>CONGRATULATIONS!</b> 🎉\nYou won <b>${w.prizeAmount}</b> in the <b>${lottery.title}</b> draw! Ticket #${w.ticket.ticketNumber}`);
                     }
                 }
                 // Notify agent personally
-                const agentWithUser = await tx.agent.findUnique({
-                    where: { id: lottery.agentId },
-                    include: { user: true }
-                });
                 if (agentWithUser?.user?.telegramId) {
                     await NotificationService.sendToUser(agentWithUser.user.telegramId, `🏆 <b>Draw Complete!</b>\nThe draw for <b>${lottery.title}</b> is finished. ${winnerRecords.length} winner(s) selected.`);
                 }
@@ -106,6 +134,11 @@ export class DrawService {
             where: { lotteryId },
             include: {
                 ticket: true,
+                lottery: {
+                    include: {
+                        agent: { include: { user: { select: { name: true } } } }
+                    }
+                }
             },
             orderBy: { prizePosition: 'asc' },
         });

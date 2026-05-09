@@ -146,5 +146,35 @@ export declare class AuthController {
      * Fails if any ADMIN already exists. Remove this route in production.
      */
     static bootstrapAdmin(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    /**
+     * @openapi
+     * /api/agent/profile:
+     *   put:
+     *     summary: Update agent profile details (e.g. payment methods)
+     *     tags: [Agent]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               paymentOptions:
+     *                 type: array
+     *                 items:
+     *                   type: object
+     *                   properties:
+     *                     methodName: { type: string }
+     *                     accountNumber: { type: string }
+     *                     accountName: { type: string }
+     *                     instructions: { type: string }
+     *     responses:
+     *       200: { description: Agent profile updated successfully }
+     *       401: { description: Unauthorized }
+     *       500: { description: Server error }
+     */
+    static updateAgentProfile(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
 }
 //# sourceMappingURL=authController.d.ts.map

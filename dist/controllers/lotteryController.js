@@ -61,6 +61,18 @@ export class LotteryController {
      *       400:
      *         description: Invalid input
      */
+    static async listLotteryWinners(req, res) {
+        try {
+            const { id } = req.params;
+            if (!id)
+                return sendError(res, 400, 'Lottery ID is required');
+            const winners = await DrawService.getLotteryWinners(id);
+            sendResponse(res, 200, winners);
+        }
+        catch (error) {
+            sendError(res, 500, error.message);
+        }
+    }
     static async create(req, res) {
         try {
             // req.user.id is the User model's ID
@@ -106,7 +118,7 @@ export class LotteryController {
     }
     static async draw(req, res) {
         try {
-            const winners = await DrawService.drawWinners(req.params.id);
+            const winners = await DrawService.drawWinners(req.params.id, req.user?.id);
             sendResponse(res, 200, winners, 'Winners drawn successfully');
         }
         catch (error) {

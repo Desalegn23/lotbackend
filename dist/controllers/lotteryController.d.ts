@@ -59,6 +59,7 @@ export declare class LotteryController {
      *       400:
      *         description: Invalid input
      */
+    static listLotteryWinners(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static create(req: Request, res: Response): Promise<void>;
     static list(req: Request, res: Response): Promise<void>;
     static getById(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;

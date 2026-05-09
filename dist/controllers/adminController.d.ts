@@ -4,7 +4,7 @@ export declare class AdminController {
     static listAgents(req: Request, res: Response): Promise<void>;
     static getAgentById(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static createAgent(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
-    static updateAgent(req: Request, res: Response): Promise<void>;
+    static updateAgent(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static deactivateAgent(req: Request, res: Response): Promise<void>;
     static activateAgent(req: Request, res: Response): Promise<void>;
     static resetAgentPassword(req: Request, res: Response): Promise<void>;
@@ -18,5 +18,6 @@ export declare class AdminController {
     static monitorSystem(req: Request, res: Response): Promise<void>;
     static getDashboardActivity(req: Request, res: Response): Promise<void>;
     static updateNotificationSettings(req: Request, res: Response): Promise<void>;
+    static updateLotteryNotificationSettings(req: Request, res: Response): Promise<void>;
 }
 //# sourceMappingURL=adminController.d.ts.map

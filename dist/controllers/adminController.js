@@ -2,6 +2,7 @@ import prisma from "../db/prisma.js";
 import { sendResponse, sendError } from "../utils/response.js";
 import bcrypt from "bcrypt";
 import { AdminService } from "../services/adminService.js";
+import { validatePhone } from "../utils/validation.js";
 export class AdminController {
     static mapAgentResponse(a) {
         let totalGrossRevenue = 0;
@@ -29,8 +30,7 @@ export class AdminController {
             email: a.user.email,
             phone: a.user.phone || '',
             status: a.user.status,
-            bankName: a.bankName || '',
-            accountNumber: a.accountNumber || '',
+            paymentOptions: a.paymentOptions || [],
             commissionRate: a.commissionRate || 10,
             totalLotteries: a.lotteries ? a.lotteries.length : 0,
             totalRevenue: totalGrossRevenue,
@@ -45,6 +45,7 @@ export class AdminController {
             const agents = await prisma.agent.findMany({
                 include: {
                     user: true,
+                    paymentOptions: true,
                     lotteries: {
                         include: {
                             winners: true
@@ -66,6 +67,7 @@ export class AdminController {
                 where: { id: String(id) },
                 include: {
                     user: true,
+                    paymentOptions: true,
                     lotteries: {
                         include: {
                             winners: true,
@@ -106,9 +108,12 @@ export class AdminController {
     }
     static async createAgent(req, res) {
         try {
-            const { name, email, phone, password, bankName, accountNumber, commissionRate } = req.body;
+            const { name, email, phone, password, commissionRate, paymentOptions } = req.body;
             if (!phone) {
                 return sendError(res, 400, "Phone number is required");
+            }
+            if (!validatePhone(phone)) {
+                return sendError(res, 400, "Invalid phone number. It must be numeric and maximum 15 characters.");
             }
             if (email) {
                 const existingUser = await prisma.user.findUnique({
@@ -138,12 +143,19 @@ export class AdminController {
                 return tx.agent.create({
                     data: {
                         userId: user.id,
-                        bankName: String(bankName || ''),
-                        accountNumber: String(accountNumber || ''),
-                        commissionRate: Number(commissionRate || 10)
+                        commissionRate: Number(commissionRate || 10),
+                        paymentOptions: {
+                            create: (paymentOptions || []).map((p) => ({
+                                methodName: p.methodName,
+                                accountNumber: p.accountNumber,
+                                accountName: p.accountName,
+                                instructions: p.instructions
+                            }))
+                        }
                     },
                     include: {
-                        user: true
+                        user: true,
+                        paymentOptions: true
                     }
                 });
             });
@@ -156,12 +168,13 @@ export class AdminController {
     }
     static async updateAgent(req, res) {
         try {
-            const { name, email, phone, status, bankName, accountNumber, commissionRate } = req.body;
+            const { name, email, phone, status, commissionRate, paymentOptions } = req.body;
+            if (phone && !validatePhone(phone)) {
+                return sendError(res, 400, "Invalid phone number. It must be numeric and maximum 15 characters.");
+            }
             const agent = await prisma.agent.update({
                 where: { id: String(req.params.id) },
                 data: {
-                    bankName: String(bankName || ''),
-                    accountNumber: String(accountNumber || ''),
                     commissionRate: Number(commissionRate || 10),
                     user: {
                         update: {
@@ -170,9 +183,20 @@ export class AdminController {
                             phone: String(phone || ''),
                             status
                         }
+                    },
+                    // Update payment options: delete old ones and create new ones for simplicity
+                    // Or use a more complex sync logic if needed
+                    paymentOptions: {
+                        deleteMany: {},
+                        create: (paymentOptions || []).map((p) => ({
+                            methodName: p.methodName,
+                            accountNumber: p.accountNumber,
+                            accountName: p.accountName,
+                            instructions: p.instructions
+                        }))
                     }
                 },
-                include: { user: true }
+                include: { user: true, paymentOptions: true }
             });
             const mappedAgent = AdminController.mapAgentResponse(agent);
             sendResponse(res, 200, mappedAgent, "Agent updated successfully");
@@ -272,7 +296,8 @@ export class AdminController {
                 include: {
                     agent: {
                         include: {
-                            user: true
+                            user: true,
+                            paymentOptions: true
                         }
                     },
                     prizeDistribution: true,
@@ -300,7 +325,8 @@ export class AdminController {
                 include: {
                     agent: {
                         include: {
-                            user: true
+                            user: true,
+                            paymentOptions: true
                         }
                     },
                     prizeDistribution: true,
@@ -469,17 +495,38 @@ export class AdminController {
     static async updateNotificationSettings(req, res) {
         try {
             const userId = req.user?.id;
-            const { notifyInterval, notifyThreshold, notifyLanguage, customMessage } = req.body;
+            const { notifyInterval, notifyThreshold, notifyLanguage, notifyShowHolders, customMessage } = req.body;
             const agent = await prisma.agent.update({
                 where: { userId },
                 data: {
                     notifyInterval,
                     notifyThreshold: Number(notifyThreshold),
                     notifyLanguage,
+                    notifyShowHolders: Boolean(notifyShowHolders),
                     customMessage
                 }
             });
             sendResponse(res, 200, agent, "Notification settings updated successfully");
+        }
+        catch (error) {
+            sendError(res, 400, error.message);
+        }
+    }
+    static async updateLotteryNotificationSettings(req, res) {
+        try {
+            const { id } = req.params;
+            const { notifyInterval, notifyThreshold, notifyLanguage, notifyShowHolders, customMessage } = req.body;
+            const lottery = await prisma.lottery.update({
+                where: { id: id },
+                data: {
+                    notifyInterval,
+                    notifyThreshold: (notifyThreshold !== undefined && notifyThreshold !== null) ? Number(notifyThreshold) : null,
+                    notifyLanguage,
+                    notifyShowHolders: (notifyShowHolders !== undefined && notifyShowHolders !== null) ? Boolean(notifyShowHolders) : null,
+                    customMessage
+                }
+            });
+            sendResponse(res, 200, lottery, "Lottery notification settings updated successfully");
         }
         catch (error) {
             sendError(res, 400, error.message);

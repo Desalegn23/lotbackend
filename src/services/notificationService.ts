@@ -228,22 +228,27 @@ export class NotificationService {
       });
 
       for (const group of groups) {
-        try {
-          // If no markup provided, add a default "Join & Play" button
-          const finalMarkup = markup || Markup.inlineKeyboard([
-            [Markup.button.url("🍀 Play Now", this.getDeepLink("browse"))]
-          ]);
-
-          await this.bot.telegram.sendMessage(group.chatId, message, {
-            parse_mode: 'HTML',
-            ...finalMarkup
-          });
-        } catch (e) {
-          console.error(`Failed to send message to group ${group.chatId}`, e);
-        }
+        await this.sendToGroup(group.chatId, message, markup);
       }
     } catch (e) {
       console.error(`Failed to send message to agent groups ${agentId}`, e);
+    }
+  }
+
+  static async sendToGroup(chatId: string, message: string, markup?: any) {
+    if (!this.bot) return;
+    try {
+      // If no markup provided, add a default "Join & Play" button
+      const finalMarkup = markup || Markup.inlineKeyboard([
+        [Markup.button.url("🍀 Play Now", this.getDeepLink("browse"))]
+      ]);
+
+      await this.bot.telegram.sendMessage(chatId, message, {
+        parse_mode: 'HTML',
+        ...finalMarkup
+      });
+    } catch (e) {
+      console.error(`Failed to send message to group ${chatId}`, e);
     }
   }
 }

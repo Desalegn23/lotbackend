@@ -28,6 +28,11 @@ export declare class LotteryService {
         status: import("@prisma/client").$Enums.LotteryStatus;
         createdAt: Date;
         updatedAt: Date;
+        notifyInterval: string | null;
+        notifyThreshold: number | null;
+        notifyLanguage: string | null;
+        notifyShowHolders: boolean | null;
+        customMessage: string | null;
         title: string;
         description: string | null;
         ticketPrice: number;
@@ -44,16 +49,23 @@ export declare class LotteryService {
             user: {
                 name: string;
             };
+            paymentOptions: {
+                id: string;
+                methodName: string;
+                accountNumber: string;
+                accountName: string | null;
+                instructions: string | null;
+                agentId: string;
+            }[];
         } & {
             id: string;
             createdAt: Date;
             userId: string;
-            accountNumber: string | null;
-            bankName: string | null;
             commissionRate: number;
             notifyInterval: string;
             notifyThreshold: number;
             notifyLanguage: string;
+            notifyShowHolders: boolean;
             customMessage: string | null;
         };
         _count: {
@@ -72,6 +84,11 @@ export declare class LotteryService {
         status: import("@prisma/client").$Enums.LotteryStatus;
         createdAt: Date;
         updatedAt: Date;
+        notifyInterval: string | null;
+        notifyThreshold: number | null;
+        notifyLanguage: string | null;
+        notifyShowHolders: boolean | null;
+        customMessage: string | null;
         title: string;
         description: string | null;
         ticketPrice: number;
@@ -88,16 +105,23 @@ export declare class LotteryService {
             user: {
                 name: string;
             };
+            paymentOptions: {
+                id: string;
+                methodName: string;
+                accountNumber: string;
+                accountName: string | null;
+                instructions: string | null;
+                agentId: string;
+            }[];
         } & {
             id: string;
             createdAt: Date;
             userId: string;
-            accountNumber: string | null;
-            bankName: string | null;
             commissionRate: number;
             notifyInterval: string;
             notifyThreshold: number;
             notifyLanguage: string;
+            notifyShowHolders: boolean;
             customMessage: string | null;
         };
         _count: {
@@ -116,6 +140,11 @@ export declare class LotteryService {
         status: import("@prisma/client").$Enums.LotteryStatus;
         createdAt: Date;
         updatedAt: Date;
+        notifyInterval: string | null;
+        notifyThreshold: number | null;
+        notifyLanguage: string | null;
+        notifyShowHolders: boolean | null;
+        customMessage: string | null;
         title: string;
         description: string | null;
         ticketPrice: number;
@@ -144,12 +173,11 @@ export declare class LotteryService {
                 id: string;
                 createdAt: Date;
                 userId: string;
-                accountNumber: string | null;
-                bankName: string | null;
                 commissionRate: number;
                 notifyInterval: string;
                 notifyThreshold: number;
                 notifyLanguage: string;
+                notifyShowHolders: boolean;
                 customMessage: string | null;
             };
             title: string;
@@ -187,6 +215,11 @@ export declare class AgentService {
         status: import("@prisma/client").$Enums.LotteryStatus;
         createdAt: Date;
         updatedAt: Date;
+        notifyInterval: string | null;
+        notifyThreshold: number | null;
+        notifyLanguage: string | null;
+        notifyShowHolders: boolean | null;
+        customMessage: string | null;
         title: string;
         description: string | null;
         ticketPrice: number;

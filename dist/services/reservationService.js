@@ -1,14 +1,17 @@
 import prisma from '../db/prisma.js';
 import { ReservationStatus, TicketStatus } from '@prisma/client';
 import { NotificationService } from './notificationService.js';
+import { validatePhone } from '../utils/validation.js';
 export class ReservationService {
     static validateReservationData(data) {
         if (!data.name || data.name.trim() === '') {
             throw new Error('Name is required for reservation');
         }
-        // Email is now optional, so we remove the validation check for it
         if (!data.phone || data.phone.trim() === '') {
             throw new Error('Phone number is required for reservation');
+        }
+        if (!validatePhone(data.phone)) {
+            throw new Error('Invalid phone number. It must be numeric and maximum 15 characters.');
         }
     }
     static async createPublicReservation(data) {

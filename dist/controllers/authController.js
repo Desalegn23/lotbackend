@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../db/prisma.js';
 import { sendResponse, sendError } from '../utils/response.js';
 import { validateWebAppData, parseInitDataUser } from '../utils/telegramAuth.js';
+import { validatePhone } from '../utils/validation.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 /**
@@ -39,6 +40,9 @@ export class AuthController {
             const { name, email, phone, password } = req.body;
             if (!name || !password || !phone) {
                 return sendError(res, 400, 'name, phone and password are required');
+            }
+            if (!validatePhone(phone)) {
+                return sendError(res, 400, 'Invalid phone number. It must be numeric and maximum 15 characters.');
             }
             if (email) {
                 const existing = await prisma.user.findUnique({ where: { email } });
@@ -220,11 +224,11 @@ export class AuthController {
                                 status: true,
                             }
                         },
-                        bankName: true,
-                        accountNumber: true,
+                        paymentOptions: true,
                         notifyInterval: true,
                         notifyThreshold: true,
                         notifyLanguage: true,
+                        notifyShowHolders: true,
                         customMessage: true,
                         createdAt: true,
                     },
@@ -277,11 +281,11 @@ export class AuthController {
                             status: true,
                         }
                     },
-                    bankName: true,
-                    accountNumber: true,
+                    paymentOptions: true,
                     notifyInterval: true,
                     notifyThreshold: true,
                     notifyLanguage: true,
+                    notifyShowHolders: true,
                     customMessage: true,
                     createdAt: true,
                 },
@@ -341,7 +345,7 @@ export class AuthController {
                 include: { agent: true },
             });
             if (!user) {
-                return sendError(res, 404, 'No account linked to this Telegram profile. Please sign up or login with email first to link your account.');
+                return sendError(res, 404, 'No account linked to this Telegram profile. Please sign up or login with your phone number first to link your account.');
             }
             if (user.status === 'INACTIVE') {
                 return sendError(res, 403, 'Your account has been deactivated. Contact an administrator.');
@@ -433,8 +437,8 @@ export class AuthController {
                 return sendError(res, 400, 'An admin account already exists.');
             }
             const { name, email, phone, password } = req.body;
-            if (!name || !email || !password || !phone) {
-                return sendError(res, 400, 'name, email, phone and password are required');
+            if (!name || !password || !phone) {
+                return sendError(res, 400, 'name, phone and password are required');
             }
             const hashed = await bcrypt.hash(password, 10);
             const admin = await prisma.user.create({
@@ -445,6 +449,59 @@ export class AuthController {
                 token,
                 user: { id: admin.id, name: admin.name, email: admin.email, role: admin.role },
             }, 'Admin account created successfully');
+        }
+        catch (error) {
+            return sendError(res, 500, error.message);
+        }
+    }
+    /**
+     * @openapi
+     * /api/agent/profile:
+     *   put:
+     *     summary: Update agent profile details (e.g. payment methods)
+     *     tags: [Agent]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               paymentOptions:
+     *                 type: array
+     *                 items:
+     *                   type: object
+     *                   properties:
+     *                     methodName: { type: string }
+     *                     accountNumber: { type: string }
+     *                     accountName: { type: string }
+     *                     instructions: { type: string }
+     *     responses:
+     *       200: { description: Agent profile updated successfully }
+     *       401: { description: Unauthorized }
+     *       500: { description: Server error }
+     */
+    static async updateAgentProfile(req, res) {
+        try {
+            const userId = req.user?.id;
+            const { paymentOptions } = req.body;
+            await prisma.agent.update({
+                where: { userId },
+                data: {
+                    paymentOptions: {
+                        deleteMany: {},
+                        create: (paymentOptions || []).map((p) => ({
+                            methodName: p.methodName,
+                            accountNumber: p.accountNumber,
+                            accountName: p.accountName,
+                            instructions: p.instructions
+                        }))
+                    }
+                }
+            });
+            return sendResponse(res, 200, null, 'Agent profile updated successfully');
         }
         catch (error) {
             return sendError(res, 500, error.message);
