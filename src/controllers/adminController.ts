@@ -3,6 +3,7 @@ import prisma from "../db/prisma.js";
 import { sendResponse, sendError } from "../utils/response.js";
 import bcrypt from "bcrypt";
 import { AdminService } from "../services/adminService.js";
+import { validatePhone } from "../utils/validation.js";
 
 interface Winner {
   prizeAmount: number;
@@ -137,6 +138,10 @@ export class AdminController {
         return sendError(res, 400, "Phone number is required");
       }
 
+      if (!validatePhone(phone)) {
+        return sendError(res, 400, "Invalid phone number. It must be numeric and maximum 15 characters.");
+      }
+
       if (email) {
         const existingUser = await prisma.user.findUnique({
           where: { email }
@@ -199,6 +204,10 @@ export class AdminController {
   static async updateAgent(req: Request, res: Response) {
     try {
       const { name, email, phone, status, commissionRate, paymentOptions } = req.body;
+
+      if (phone && !validatePhone(phone)) {
+        return sendError(res, 400, "Invalid phone number. It must be numeric and maximum 15 characters.");
+      }
 
       const agent = await prisma.agent.update({
         where: { id: String(req.params.id) },

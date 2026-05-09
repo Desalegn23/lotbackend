@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../db/prisma.js';
 import { sendResponse, sendError } from '../utils/response.js';
 import { validateWebAppData, parseInitDataUser } from '../utils/telegramAuth.js';
+import { validatePhone } from '../utils/validation.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -44,6 +45,10 @@ export class AuthController {
 
       if (!name || !password || !phone) {
         return sendError(res, 400, 'name, phone and password are required');
+      }
+
+      if (!validatePhone(phone)) {
+        return sendError(res, 400, 'Invalid phone number. It must be numeric and maximum 15 characters.');
       }
 
       if (email) {
