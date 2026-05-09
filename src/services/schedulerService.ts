@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import { Markup } from 'telegraf';
 import prisma from '../db/prisma.js';
 import { NotificationService } from './notificationService.js';
 
@@ -195,14 +196,19 @@ export class SchedulerService {
             `<b>${lottery.title}</b>\n` +
             `Remaining numbers: ${remainingNums}${availableCount > 10 ? '...' : ''}\n\n` +
             `For just <b>ETB ${lottery.ticketPrice}</b> per ticket, who will win <b>${topPrize}</b>?\n` +
-            `Try your chance now! 🍀` + holdersText;
+            `Try your luck now! 🍀` + holdersText;
         }
 
         const targetGroupId = (lottery as any).telegramGroupId;
+        const btnText = lang === 'AM' ? "🍀 አሁኑኑ ዕድልዎን ይሞክሩ" : "🍀 Try your luck now";
+        const markup = Markup.inlineKeyboard([
+          [Markup.button.url(btnText, NotificationService.getDeepLink(`lottery_${lottery.id}`))]
+        ]);
+
         if (targetGroupId) {
-          await NotificationService.sendToGroup(targetGroupId, message);
+          await NotificationService.sendToGroup(targetGroupId, message, markup);
         } else {
-          await NotificationService.sendToAgentGroups(lottery.agentId, message);
+          await NotificationService.sendToAgentGroups(lottery.agentId, message, markup);
         }
 
         // Also notify the agent personally if capacity is low
