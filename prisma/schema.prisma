@@ -66,6 +66,13 @@ model Lottery {
   drawnAt           DateTime?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
+  
+  // Notification Overrides (if null, use Agent defaults)
+  notifyInterval    String?
+  notifyThreshold   Int?
+  notifyLanguage    String?
+  notifyShowHolders Boolean?
+  customMessage     String?
   agent             Agent               @relation(fields: [agentId], references: [id])
   prizeDistribution PrizeDistribution[]
   reservations      Reservation[]

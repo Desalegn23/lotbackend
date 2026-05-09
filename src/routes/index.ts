@@ -47,6 +47,7 @@ router.get('/agent/winners', authenticate, agentOnly, LotteryController.listMyWi
 router.get('/agent/lotteries/:id/tickets', authenticate, agentOnly, LotteryController.getMyLotteryTickets);
 router.get('/agent/lotteries/:id/winners', authenticate, agentOnly, LotteryController.getMyLotteryWinners);
 router.put('/agent/notification-settings', authenticate, agentOnly, AdminController.updateNotificationSettings);
+router.put('/agent/lotteries/:id/notification-settings', authenticate, agentOnly, AdminController.updateLotteryNotificationSettings);
 
 
 // ─────────────────────────────────────────────

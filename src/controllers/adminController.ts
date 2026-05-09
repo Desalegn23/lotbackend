@@ -598,4 +598,26 @@ export class AdminController {
     }
   }
 
+  static async updateLotteryNotificationSettings(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { notifyInterval, notifyThreshold, notifyLanguage, notifyShowHolders, customMessage } = req.body;
+
+      const lottery = await prisma.lottery.update({
+        where: { id },
+        data: {
+          notifyInterval,
+          notifyThreshold: (notifyThreshold !== undefined && notifyThreshold !== null) ? Number(notifyThreshold) : null,
+          notifyLanguage,
+          notifyShowHolders: (notifyShowHolders !== undefined && notifyShowHolders !== null) ? Boolean(notifyShowHolders) : null,
+          customMessage
+        }
+      });
+
+      sendResponse(res, 200, lottery, "Lottery notification settings updated successfully");
+    } catch (error: any) {
+      sendError(res, 400, error.message);
+    }
+  }
+
 }

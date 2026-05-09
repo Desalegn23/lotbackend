@@ -109,35 +109,41 @@ export class SchedulerService {
         const agent = lottery.agent;
         if (!agent) continue;
 
+        // Resolve settings: Lottery overrides Agent
+        const notifyInterval = (lottery as any).notifyInterval || agent.notifyInterval;
+        const notifyThreshold = (lottery as any).notifyThreshold !== null ? (lottery as any).notifyThreshold : agent.notifyThreshold;
+        const notifyLanguage = (lottery as any).notifyLanguage || agent.notifyLanguage || 'EN';
+        const notifyShowHolders = (lottery as any).notifyShowHolders !== null ? (lottery as any).notifyShowHolders : (agent as any).notifyShowHolders;
+        const resolvedCustomMessage = (lottery as any).customMessage || agent.customMessage;
+
         // 1. Check if notifications are disabled
-        if (agent.notifyInterval === 'DISABLED') continue;
+        if (notifyInterval === 'DISABLED') continue;
 
         // 2. Check Interval (Heuristic)
         let shouldNotify = false;
         const now = new Date();
         const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
-        const interval = agent.notifyInterval;
 
-        if (interval === '1M') {
+        if (notifyInterval === '1M') {
           shouldNotify = true;
-        } else if (interval === '5M' && currentMinute % 5 === 0) {
+        } else if (notifyInterval === '5M' && currentMinute % 5 === 0) {
           shouldNotify = true;
-        } else if (interval === '15M' && currentMinute % 15 === 0) {
+        } else if (notifyInterval === '15M' && currentMinute % 15 === 0) {
           shouldNotify = true;
-        } else if (interval === '30M' && currentMinute % 30 === 0) {
+        } else if (notifyInterval === '30M' && currentMinute % 30 === 0) {
           shouldNotify = true;
-        } else if (interval === '1H' && currentMinute === 0) {
+        } else if (notifyInterval === '1H' && currentMinute === 0) {
           shouldNotify = true;
-        } else if (interval === '2H' && currentMinute === 0 && currentHour % 2 === 0) {
+        } else if (notifyInterval === '2H' && currentMinute === 0 && currentHour % 2 === 0) {
           shouldNotify = true;
-        } else if (interval === '4H' && currentMinute === 0 && currentHour % 4 === 0) {
+        } else if (notifyInterval === '4H' && currentMinute === 0 && currentHour % 4 === 0) {
           shouldNotify = true;
-        } else if (interval === '12H' && currentMinute === 0 && currentHour % 12 === 0) {
+        } else if (notifyInterval === '12H' && currentMinute === 0 && currentHour % 12 === 0) {
           shouldNotify = true;
-        } else if (interval === 'DAILY' && currentMinute === 0 && currentHour === 20) {
+        } else if (notifyInterval === 'DAILY' && currentMinute === 0 && currentHour === 20) {
           shouldNotify = true;
-        } else if (!['1M', '5M', '15M', '30M', '1H', '2H', '4H', '12H', 'DAILY'].includes(interval)) {
+        } else if (!['1M', '5M', '15M', '30M', '1H', '2H', '4H', '12H', 'DAILY'].includes(notifyInterval)) {
           // Default/Unknown - run hourly as fallback if it happens to be at minute 0
           if (currentMinute === 0) shouldNotify = true;
         }
@@ -148,18 +154,17 @@ export class SchedulerService {
         const availableCount = (lottery as any)._count.tickets;
         const percentRemaining = (availableCount / lottery.totalTickets) * 100;
         
-        const threshold = agent.notifyThreshold || 20;
-        if (percentRemaining > threshold) continue;
+        if (percentRemaining > notifyThreshold) continue;
         if (availableCount === 0) continue;
 
         // 4. Construct Message based on Language
-        const lang = agent.notifyLanguage || 'EN';
+        const lang = notifyLanguage;
         const remainingNums = lottery.tickets.map(t => t.ticketNumber).join(', ');
         const topPrize = lottery.prizeDistribution[0]?.prizeAmount || (lang === 'AM' ? 'ታላላቅ ሽልማቶች' : 'Amazing prizes');
 
         // 5. Construct Holders list if enabled
         let holdersText = "";
-        if ((agent as any).notifyShowHolders && (lottery as any).reservations?.length > 0) {
+        if (notifyShowHolders && (lottery as any).reservations?.length > 0) {
           const list = (lottery as any).reservations.map((r: any) => {
             const ticketNums = r.tickets.map((rt: any) => `#${rt.ticket.ticketNumber}`).join(', ');
             return `👤 ${r.name} (${ticketNums})`;
@@ -168,9 +173,9 @@ export class SchedulerService {
         }
 
         let message = "";
-        if (agent.customMessage) {
+        if (resolvedCustomMessage) {
           // Use custom template if provided
-          message = agent.customMessage
+          message = resolvedCustomMessage
             .replace('{title}', lottery.title)
             .replace('{count}', availableCount.toString())
             .replace('{price}', lottery.ticketPrice.toString())
