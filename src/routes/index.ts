@@ -48,6 +48,7 @@ router.get('/agent/lotteries/:id/tickets', authenticate, agentOnly, LotteryContr
 router.get('/agent/lotteries/:id/winners', authenticate, agentOnly, LotteryController.getMyLotteryWinners);
 router.put('/agent/notification-settings', authenticate, agentOnly, AdminController.updateNotificationSettings);
 router.put('/agent/lotteries/:id/notification-settings', authenticate, agentOnly, AdminController.updateLotteryNotificationSettings);
+router.get('/agent/telegram-groups', authenticate, agentOnly, AdminController.getMyTelegramGroups);
 
 
 // ─────────────────────────────────────────────

@@ -621,4 +621,25 @@ export class AdminController {
     }
   }
 
+  static async getMyTelegramGroups(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+      const agent = await prisma.agent.findUnique({
+        where: { userId }
+      });
+
+      if (!agent) {
+        return sendError(res, 404, "Agent not found");
+      }
+
+      const groups = await prisma.telegramGroup.findMany({
+        where: { agentId: agent.id }
+      });
+
+      sendResponse(res, 200, groups);
+    } catch (error: any) {
+      sendError(res, 400, error.message);
+    }
+  }
+
 }
