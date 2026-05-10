@@ -601,7 +601,7 @@ export class AdminController {
   static async updateLotteryNotificationSettings(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { notifyInterval, notifyThreshold, notifyLanguage, notifyShowHolders, customMessage, telegramGroupId } = req.body;
+      const { notifyInterval, notifyThreshold, notifyLanguage, notifyShowHolders, customMessage, telegramGroupIds } = req.body;
 
       const lottery = await prisma.lottery.update({
         where: { id: id as string },
@@ -611,7 +611,7 @@ export class AdminController {
           notifyLanguage,
           notifyShowHolders: (notifyShowHolders !== undefined && notifyShowHolders !== null) ? Boolean(notifyShowHolders) : null,
           customMessage,
-          telegramGroupId
+          telegramGroupIds: Array.isArray(telegramGroupIds) ? telegramGroupIds : []
         }
       });
 

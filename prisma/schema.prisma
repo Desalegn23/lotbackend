@@ -73,7 +73,7 @@ model Lottery {
   notifyLanguage    String?
   notifyShowHolders Boolean?
   customMessage     String?
-  telegramGroupId   String?
+  telegramGroupIds  String[]
   agent             Agent               @relation(fields: [agentId], references: [id])
   prizeDistribution PrizeDistribution[]
   reservations      Reservation[]

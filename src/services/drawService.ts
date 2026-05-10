@@ -147,9 +147,11 @@ export class DrawService {
         
         const announcement = `🏆 <b>አሸናፊዎች ታውቀዋል!</b> 🏆\n\nየ <b>${lottery.title}</b> ዕጣ ውጤቶች:\n${winnerList}\n\nለአሸናፊዎች እንኳን ደስ አላችሁ! ቀጣዩ ዙር በቅርቡ ይጀምራል።`;
         
-        const targetGroupId = (lottery as any).telegramGroupId;
-        if (targetGroupId) {
-          await NotificationService.sendToGroup(targetGroupId, announcement);
+        const targetGroupIds = (lottery as any).telegramGroupIds;
+        if (targetGroupIds && targetGroupIds.length > 0) {
+          for (const gid of targetGroupIds) {
+            await NotificationService.sendToGroup(gid, announcement);
+          }
         } else {
           await NotificationService.sendToAgentGroups(lottery.agentId, announcement);
         }

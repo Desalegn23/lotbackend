@@ -286,14 +286,16 @@ export class NotificationService {
           `Only <b>${remainingCount}</b> tickets left! 🍀`;
       }
 
-      const targetGroupId = (lottery as any).telegramGroupId;
+      const targetGroupIds = (lottery as any).telegramGroupIds;
       const btnText = lang === 'AM' ? "🍀 አሁኑኑ ይጫወቱ" : "🍀 Play Now";
       const markup = Markup.inlineKeyboard([
         [Markup.button.url(btnText, NotificationService.getDeepLink(`lottery_${lottery.id}`))]
       ]);
 
-      if (targetGroupId) {
-        await NotificationService.sendToGroup(targetGroupId, message, markup);
+      if (targetGroupIds && targetGroupIds.length > 0) {
+        for (const gid of targetGroupIds) {
+          await NotificationService.sendToGroup(gid, message, markup);
+        }
       } else {
         await NotificationService.sendToAgentGroups(lottery.agentId, message, markup);
       }
