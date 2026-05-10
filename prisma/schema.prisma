@@ -17,7 +17,12 @@ model User {
   status       UserStatus    @default(ACTIVE)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  agent        Agent?
+  agent        Agent?        @relation("UserIsAgent") // Existing relation: User IS an agent
+  
+  // Permanent Agent Scope: Who referred this user
+  agentId         String?
+  referringAgent  Agent?      @relation("AgentReferrals", fields: [agentId], references: [id])
+  
   reservations Reservation[]
 }
 
@@ -37,9 +42,12 @@ model Agent {
   notifyShowHolders Boolean @default(false) // Whether to list reservers in notifications
   customMessage   String?   // Custom Amharic/English message template
   
-  user          User            @relation(fields: [userId], references: [id])
+  user          User            @relation("UserIsAgent", fields: [userId], references: [id])
   lotteries     Lottery[]
   telegramGroups TelegramGroup[]
+  
+  // Referrals
+  referredUsers User[]          @relation("AgentReferrals")
 }
 
 model PaymentOption {
@@ -201,6 +209,7 @@ model TelegramGroup {
 model TelegramLead {
   id         String   @id @default(uuid())
   telegramId String   @unique
+  agentId    String?  // Captured when they first join the bot
   createdAt  DateTime @default(now())
 }
 

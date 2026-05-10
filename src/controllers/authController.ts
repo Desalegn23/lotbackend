@@ -41,7 +41,7 @@ export class AuthController {
    */
   static async signup(req: Request, res: Response) {
     try {
-      const { name, email, phone, password } = req.body;
+      const { name, email, phone, password, agentId } = req.body;
 
       if (!name || !password || !phone) {
         return sendError(res, 400, 'name, phone and password are required');
@@ -66,7 +66,14 @@ export class AuthController {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const user = await prisma.user.create({
-        data: { name, email, phone, password: hashedPassword, role: 'USER' },
+        data: { 
+          name, 
+          email, 
+          phone, 
+          password: hashedPassword, 
+          role: 'USER',
+          agentId: agentId || null 
+        },
       });
 
       const token = signToken({ id: user.id, role: user.role });
@@ -355,7 +362,7 @@ export class AuthController {
    */
   static async loginWithTelegram(req: Request, res: Response) {
     try {
-      const { initData } = req.body;
+      const { initData, agentId } = req.body;
       if (!initData) {
         return sendError(res, 400, 'initData is required');
       }
@@ -383,6 +390,17 @@ export class AuthController {
         where: { telegramId },
         include: { agent: true },
       });
+
+      if (user) {
+        // If user exists but doesn't have an agentId, set it now (if provided)
+        if (!user.agentId && agentId) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { agentId },
+            include: { agent: true }
+          });
+        }
+      }
 
       if (!user) {
         return sendError(res, 404, 'No account linked to this Telegram profile. Please sign up or login with your phone number first to link your account.');

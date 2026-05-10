@@ -22,11 +22,11 @@ router.post('/auth/bootstrap-admin', AuthController.bootstrapAdmin); // one-time
 // ─────────────────────────────────────────────
 // PUBLIC ROUTES
 // ─────────────────────────────────────────────
-router.get('/lotteries', LotteryController.list);
+router.get('/lotteries', authenticateOptional, LotteryController.list);
 router.get('/lotteries/:id', LotteryController.getById);
 router.get('/lotteries/:id/tickets', LotteryController.getTickets);
 router.get('/lotteries/:id/winners', LotteryController.listLotteryWinners);
-router.get('/winners', LotteryController.listWinners);
+router.get('/winners', authenticateOptional, LotteryController.listWinners);
 router.post('/reservations', authenticateOptional, ReservationController.reserve);
 router.get('/user/reservations', authenticate, ReservationController.listUserTickets);
 

@@ -24,11 +24,20 @@ export class NotificationService {
           const user = await prisma.user.findUnique({ where: { telegramId } });
           
           if (!user) {
+            const payload = (ctx as any).startPayload;
+            let referrerAgentId = null;
+            if (payload && payload.startsWith('agent_')) {
+              referrerAgentId = payload.replace('agent_', '');
+            }
+
             // Capture as a lead for marketing
             await prisma.telegramLead.upsert({
               where: { telegramId },
-              update: {},
-              create: { telegramId }
+              update: { agentId: referrerAgentId },
+              create: { 
+                telegramId,
+                agentId: referrerAgentId
+              }
             });
 
             await ctx.reply(

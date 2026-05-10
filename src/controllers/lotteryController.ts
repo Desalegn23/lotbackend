@@ -91,7 +91,9 @@ export class LotteryController {
 
   static async list(req: Request, res: Response) {
     try {
-      const lotteries = await LotteryService.getActiveLotteries();
+      const userId = (req as any).user?.id;
+      const agentId = req.query.agentId as string;
+      const lotteries = await LotteryService.getActiveLotteries(userId, agentId);
       sendResponse(res, 200, lotteries);
     } catch (error: any) {
       sendError(res, 500, error.message);
@@ -128,7 +130,9 @@ export class LotteryController {
 
   static async listWinners(req: Request, res: Response) {
     try {
-      const winners = await LotteryService.getWinners();
+      const userId = (req as any).user?.id;
+      const agentId = req.query.agentId as string;
+      const winners = await LotteryService.getWinners(userId, agentId);
       const mappedWinners = winners.map((w: any) => ({
         id: w.id,
         name: w.ticket?.reservedBy || 'Anonymous',

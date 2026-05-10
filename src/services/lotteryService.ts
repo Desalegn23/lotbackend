@@ -21,6 +21,18 @@ export class LotteryService {
       throw new Error('Agent profile not found');
     }
 
+    // Enforce Single Active Lottery Constraint
+    const activeCount = await prisma.lottery.count({
+      where: { 
+        agentId: agent.id, 
+        status: LotteryStatus.ACTIVE 
+      }
+    });
+
+    if (activeCount > 0) {
+      throw new Error('An active lottery already exists for this agent. Complete the current one before creating a new one.');
+    }
+
     return await prisma.$transaction(async (tx) => {
       // 2. Create the lottery record
       const lottery = await tx.lottery.create({
@@ -62,10 +74,24 @@ export class LotteryService {
     });
   }
 
-  static async getActiveLotteries() {
+  static async getActiveLotteries(userId?: string, guestAgentId?: string) {
+    let filterAgentId = guestAgentId;
+
+    // If user is logged in, their permanent agentId takes precedence
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { agentId: true }
+      });
+      if (user?.agentId) {
+        filterAgentId = user.agentId;
+      }
+    }
+
     const lotteries = await prisma.lottery.findMany({
       where: {
         status: LotteryStatus.ACTIVE,
+        agentId: filterAgentId || undefined,
       },
       include: {
         prizeDistribution: true,
@@ -148,8 +174,25 @@ export class LotteryService {
     });
   }
 
-  static async getWinners() {
+  static async getWinners(userId?: string, guestAgentId?: string) {
+    let filterAgentId = guestAgentId;
+
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { agentId: true }
+      });
+      if (user?.agentId) {
+        filterAgentId = user.agentId;
+      }
+    }
+
     return await prisma.winner.findMany({
+      where: {
+        lottery: {
+          agentId: filterAgentId || undefined,
+        }
+      },
       include: {
         lottery: {
           select: {
