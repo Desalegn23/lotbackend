@@ -98,7 +98,7 @@ model PrizeDistribution {
   prizeAmount String
   description String?
   prizeType   PrizeType?
-  lottery     Lottery    @relation(fields: [lotteryId], references: [id])
+  lottery     Lottery    @relation(fields: [lotteryId], references: [id], onDelete: Cascade)
 
   @@unique([lotteryId, position])
 }
@@ -111,7 +111,7 @@ model Ticket {
   createdAt          DateTime            @default(now())
   reservedBy         String?
   reservationTickets ReservationTicket[]
-  lottery            Lottery             @relation(fields: [lotteryId], references: [id])
+  lottery            Lottery             @relation(fields: [lotteryId], references: [id], onDelete: Cascade)
   winners            Winner[]
 
   @@unique([lotteryId, ticketNumber])
@@ -130,7 +130,7 @@ model Reservation {
   status           ReservationStatus   @default(PENDING)
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
-  lottery          Lottery             @relation(fields: [lotteryId], references: [id])
+  lottery          Lottery             @relation(fields: [lotteryId], references: [id], onDelete: Cascade)
   user             User?               @relation(fields: [userId], references: [id])
   tickets          ReservationTicket[]
 
@@ -141,8 +141,8 @@ model ReservationTicket {
   id            String      @id @default(uuid())
   reservationId String
   ticketId      String
-  reservation   Reservation @relation(fields: [reservationId], references: [id])
-  ticket        Ticket      @relation(fields: [ticketId], references: [id])
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  ticket        Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@unique([reservationId, ticketId])
 }
@@ -156,8 +156,8 @@ model Winner {
   drawnAt       DateTime   @default(now())
   description   String?
   prizeType     PrizeType?
-  lottery       Lottery    @relation(fields: [lotteryId], references: [id])
-  ticket        Ticket     @relation(fields: [ticketId], references: [id])
+  lottery       Lottery    @relation(fields: [lotteryId], references: [id], onDelete: Cascade)
+  ticket        Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@unique([lotteryId, ticketId])
 }
