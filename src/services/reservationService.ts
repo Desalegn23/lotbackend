@@ -96,7 +96,7 @@ export class ReservationService {
           if (customer?.telegramId && lottery) {
             await NotificationService.sendToUser(
               customer.telegramId,
-              `🎟️ <b>Ticket Reserved!</b>\nLottery: ${lottery.title}\nTickets: ${data.ticketIds.length}\nStatus: Pending Payment`
+              `🎟️ <b>ቲኬት ተይዟል!</b>\nሎተሪ: ${lottery.title}\nቲኬቶች: ${data.ticketIds.length}\nሁኔታ: ክፍያ ይጠበቃል`
             );
           }
         }
@@ -105,7 +105,7 @@ export class ReservationService {
         if (lottery?.agent?.user?.telegramId) {
           await NotificationService.sendToUser(
             lottery.agent.user.telegramId,
-            `🔔 <b>New Reservation!</b>\nUser ${data.name} reserved ${data.ticketIds.length} ticket(s) on ${lottery.title}.`
+            `🔔 <b>አዲስ ቦታ ማስያዣ!</b>\nደንበኛ ${data.name} በ ${lottery.title} ላይ ${data.ticketIds.length} ቲኬት(ችን) ይዘዋል።`
           );
         }
       } catch (e) {
@@ -222,7 +222,7 @@ export class ReservationService {
           const tNums = resWithDetails.tickets.map((t: any) => t.ticket.ticketNumber).join(', ');
           await NotificationService.sendToUser(
             resWithDetails.user.telegramId,
-            `✅ <b>Payment Confirmed!</b>\nYour tickets #${tNums} for ${resWithDetails.lottery.title} are locked in. Good luck!`
+            `✅ <b>ክፍያ ተረጋግጧል!</b>\nለ ${resWithDetails.lottery.title} የያዙት ቲኬቶች #${tNums} ጸድቀዋል። መልካም እድል!`
           );
         }
       } catch (e) {

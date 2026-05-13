@@ -56,11 +56,11 @@ export class SchedulerService {
 
         await NotificationService.sendToUser(
           agent.user.telegramId,
-          `📊 <b>Daily Summary</b>\n` +
-          `Active Lotteries: <b>${activeLotteries}</b>\n` +
-          `Total Tickets Sold: <b>${totalSold}</b>\n` +
-          `Total Revenue: <b>ETB ${totalRevenue.toLocaleString()}</b>\n\n` +
-          `Keep up the great work! 💪`
+          `📊 <b>የእለቱ ማጠቃለያ</b>\n` +
+          `ንቁ ሎተሪዎች: <b>${activeLotteries}</b>\n` +
+          `በአጠቃላይ የተሸጡ ቲኬቶች: <b>${totalSold}</b>\n` +
+          `ጠቅላላ ገቢ: <b>ETB ${totalRevenue.toLocaleString()}</b>\n\n` +
+          `መልካም ስራ! 💪`
         );
       }
     } catch (e) {
@@ -186,24 +186,17 @@ export class SchedulerService {
             .replace('{prize}', prizeDisplay)
             .replace('{numbers}', remainingNums)
             .replace('{holders}', holdersText.trim()); // Remove extra newlines if used as tag
-        } else if (lang === 'AM') {
-          // Default Amharic
+        } else {
+          // Default to Amharic even if EN is requested, per user instruction
           message = `🔥 <b>ፈጥነው ይውሰዱ! የቀሩት ${availableCount} ቲኬቶች ብቻ ናቸው!</b> 🔥\n\n` +
             `<b>${lottery.title}</b>\n` +
             `ያልተያዙ ቁጥሮች: ${remainingNums}\n\n` +
             `በ <b>${lottery.ticketPrice} ብር</b> ብቻ የ <b>${prizeDisplay}</b> ባለዕድል ይሁኑ!\n` +
             `አሁኑኑ ይሞክሩ! 🍀` + holdersText;
-        } else {
-          // Default English
-          message = `🔥 <b>HURRY! ONLY ${availableCount} TICKETS LEFT!</b> 🔥\n\n` +
-            `<b>${lottery.title}</b>\n` +
-            `Remaining numbers: ${remainingNums}\n\n` +
-            `For just <b>ETB ${lottery.ticketPrice}</b> per ticket, who will win <b>${prizeDisplay}</b>?\n` +
-            `Try your luck now! 🍀` + holdersText;
         }
 
         const targetGroupIds = (lottery as any).telegramGroupIds;
-        const btnText = lang === 'AM' ? "🍀 አሁኑኑ ይጫወቱ" : "🍀 Play Now";
+        const btnText = "🍀 አሁኑኑ ይጫወቱ";
         const markup = Markup.inlineKeyboard([
           [Markup.button.url(btnText, NotificationService.getDeepLink(`lottery_${lottery.id}`))]
         ]);
@@ -218,9 +211,7 @@ export class SchedulerService {
 
         // Also notify the agent personally if capacity is low
         if (agent.user?.telegramId) {
-          const personalMsg = lang === 'AM'
-            ? `⚠️ <b>ቲኬቶች ሊያልቁ ነው!</b>\n<b>${lottery.title}</b> የቀሩት <b>${availableCount}</b> ቲኬቶች ብቻ ናቸው (${Math.round(percentRemaining)}%)。`
-            : `⚠️ <b>Almost Sold Out!</b>\n<b>${lottery.title}</b> has only <b>${availableCount}</b> tickets remaining (${Math.round(percentRemaining)}%).`;
+          const personalMsg = `⚠️ <b>ቲኬቶች ሊያልቁ ነው!</b>\n<b>${lottery.title}</b> የቀሩት <b>${availableCount}</b> ቲኬቶች ብቻ ናቸው (${Math.round(percentRemaining)}%)።`;
             
           await NotificationService.sendToUser(agent.user.telegramId, personalMsg);
         }

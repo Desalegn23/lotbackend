@@ -41,10 +41,10 @@ export class NotificationService {
             });
 
             await ctx.reply(
-              "👋 Welcome to the Lottery Bot!\n\n" +
-              "To get started, please open our Mini App to link your account.",
+              "👋 እንኳን ወደ ሎተሪ ቦት በደህና መጡ!\n\n" +
+              "ለመጀመር እባክዎ አካውንቶን ለማገናኘት ሚኒ አፑን ይክፈቱ።",
               Markup.inlineKeyboard([
-                [Markup.button.webApp("Open Mini App", process.env.FRONTEND_URL || "")]
+                [Markup.button.webApp("አፑን ክፈት", process.env.FRONTEND_URL || "")]
               ])
             );
             return;
@@ -52,11 +52,11 @@ export class NotificationService {
 
           let message = "";
           if (user.role === 'AGENT') {
-            message = `👨‍💼 <b>Welcome Agent ${user.name}!</b>\n\nYou will receive updates here about new reservations and sold-out lotteries.`;
+            message = `👨‍💼 <b>እንኳን ደስ አለዎት ወኪል ${user.name}!</b>\n\nስለ አዲስ ቦታ ማስያዣዎች እና ስለተሸጡ ሎተሪዎች እዚህ መረጃ ይደርስዎታል።`;
           } else if (user.role === 'ADMIN') {
-            message = `👑 <b>Welcome Admin ${user.name}!</b>\n\nSystem alerts and summaries will be sent here.`;
+            message = `👑 <b>እንኳን ደህና መጡ አስተዳዳሪ ${user.name}!</b>\n\nየስርዓት ማንቂያዎች እና ማጠቃለያዎች እዚህ ይላካሉ።`;
           } else {
-            message = `👋 <b>Hello ${user.name}!</b>\n\nWelcome to your lottery dashboard. You will receive winner alerts and reservation updates here.`;
+            message = `👋 <b>ሰላም ${user.name}!</b>\n\nወደ ሎተሪ እንኳን ደህና መጡ።`;
           }
 
           await ctx.reply(message, { parse_mode: 'HTML' });
@@ -75,7 +75,7 @@ export class NotificationService {
           try {
             const agent = await prisma.agent.findUnique({ where: { id: agentId }, include: { user: true } });
             if (!agent) {
-              await ctx.reply('Error: Invalid Agent ID.');
+              await ctx.reply('ስህተት: ልክ ያልሆነ የወኪል መታወቂያ (Agent ID)።');
               return;
             }
 
@@ -89,7 +89,7 @@ export class NotificationService {
               }
             });
 
-            await ctx.reply(`👋 Hello! I have been successfully linked to agent ${agent.user.name} for lottery updates!`);
+            await ctx.reply(`👋 ሰላም! ለሎተሪ መረጃዎች ከወኪል ${agent.user.name} ጋር በተሳካ ሁኔታ ተገናኝቻለሁ!`);
           } catch (e) {
             console.error('Failed to link telegram group', e);
           }
@@ -180,14 +180,14 @@ export class NotificationService {
       
       await this.sendToUser(
         reservation.lottery.agent.user.telegramId,
-        `⏳ <b>New Reservation!</b>\n\n` +
-        `Customer: <b>${reservation.name}</b>\n` +
-        `Lottery: <b>${reservation.lottery.title}</b>\n` +
-        `Tickets: <b>${ticketNumbers}</b>\n` +
-        `Amount: <b>ETB ${reservation.tickets.length * reservation.lottery.ticketPrice}</b>\n\n` +
-        `Please check the dashboard to confirm payment.`,
+        `⏳ <b>አዲስ ቦታ ማስያዣ!</b>\n\n` +
+        `ደንበኛ: <b>${reservation.name}</b>\n` +
+        `ሎተሪ: <b>${reservation.lottery.title}</b>\n` +
+        `ቲኬቶች: <b>${ticketNumbers}</b>\n` +
+        `ጠቅላላ ዋጋ: <b>ETB ${reservation.tickets.length * reservation.lottery.ticketPrice}</b>\n\n` +
+        `እባክዎን ክፍያውን ለማረጋገጥ ዳሽቦርዱን ይመልከቱ።`,
         Markup.inlineKeyboard([
-          [Markup.button.webApp("Open Dashboard", process.env.FRONTEND_URL || "")]
+          [Markup.button.webApp("ዳሽቦርዱን ክፈት", process.env.FRONTEND_URL || "")]
         ])
       );
     } catch (e) {
@@ -216,12 +216,12 @@ export class NotificationService {
 
       await this.sendToUser(
         reservation.user.telegramId,
-        `✅ <b>Payment Confirmed!</b>\n\n` +
-        `Your reservation for <b>${reservation.lottery.title}</b> has been approved.\n` +
-        `Your tickets: <b>${ticketNumbers}</b>\n\n` +
-        `Good luck! 🍀`,
+        `✅ <b>ክፍያ ተረጋግጧል!</b>\n\n` +
+        `ለ <b>${reservation.lottery.title}</b> የያዙት ቦታ ተረጋግጧል።\n` +
+        `የእርስዎ ቲኬቶች: <b>${ticketNumbers}</b>\n\n` +
+        `መልካም እድል! 🍀`,
         Markup.inlineKeyboard([
-          [Markup.button.url("View My Tickets", this.getDeepLink(`lottery_${reservation.lotteryId}`))]
+          [Markup.button.url("ቲኬቶቼን እይ", this.getDeepLink(`lottery_${reservation.lotteryId}`))]
         ])
       );
     } catch (e) {
@@ -249,7 +249,7 @@ export class NotificationService {
     try {
       // If no markup provided, add a default "Join & Play" button
       const finalMarkup = markup || Markup.inlineKeyboard([
-        [Markup.button.url("🍀 Play Now", this.getDeepLink("browse"))]
+        [Markup.button.url("🍀 አሁኑኑ ይጫወቱ", this.getDeepLink("browse"))]
       ]);
 
       await this.bot.telegram.sendMessage(chatId, message, {
@@ -290,13 +290,14 @@ export class NotificationService {
           `👤 <b>${reservation.name}</b> ${ticketNumbers} ቁጥሮችን ለ <b>${lottery.title}</b> ወስደዋል!\n\n` +
           `አሁን የቀሩት <b>${remainingCount}</b> ቲኬቶች ብቻ ናቸው! 🍀`;
       } else {
-        message = `🔥 <b>New Tickets Secured!</b> 🔥\n\n` +
-          `👤 <b>${reservation.name}</b> just secured tickets ${ticketNumbers} for <b>${lottery.title}</b>!\n\n` +
-          `Only <b>${remainingCount}</b> tickets left! 🍀`;
+        // Default to Amharic even if EN is requested, per user instruction
+        message = `🔥 <b>አዲስ ቲኬት ተሸጧል!</b> 🔥\n\n` +
+          `👤 <b>${reservation.name}</b> ${ticketNumbers} ቁጥሮችን ለ <b>${lottery.title}</b> ወስደዋል!\n\n` +
+          `አሁን የቀሩት <b>${remainingCount}</b> ቲኬቶች ብቻ ናቸው! 🍀`;
       }
 
       const targetGroupIds = (lottery as any).telegramGroupIds;
-      const btnText = lang === 'AM' ? "🍀 አሁኑኑ ይጫወቱ" : "🍀 Play Now";
+      const btnText = "🍀 አሁኑኑ ይጫወቱ";
       const markup = Markup.inlineKeyboard([
         [Markup.button.url(btnText, NotificationService.getDeepLink(`lottery_${lottery.id}`))]
       ]);
